@@ -1,0 +1,24 @@
+server:
+  port: 8081
+  servlet:
+    context-path: /
+
+spring:
+  datasource:
+    username: root
+    password: root
+    driver-class-name: com.mysql.jdbc.Driver
+    url: jdbc:mysql://localhost:3306/ls?useUnicode=true&characterEncoding=UTF-8&allowMultiQueries=true
+    platform: mysql
+    continue-on-error: true
+    initialization-mode: always
+
+mybatis:
+  config-location: classpath:mybatis/mybatis-config.xml
+  mapper-locations: classpath*:mapper/*Mapper.xml
+
+logging:
+  level:
+    com.syswin.temail.data.consistency.infrastructure: DEBUG
+
+
