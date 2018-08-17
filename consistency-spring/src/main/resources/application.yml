@@ -12,6 +12,10 @@ spring:
     platform: mysql
     continue-on-error: true
     initialization-mode: always
+  rocketmq:
+    name-server: 172.28.43.18:9876
+    producer:
+      group: consistency-group
 
 mybatis:
   config-location: classpath:mybatis/mybatis-config.xml

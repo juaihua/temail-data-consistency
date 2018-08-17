@@ -21,6 +21,7 @@
     <setting name="logImpl" value="STDOUT_LOGGING"/>
   </settings>
   <typeAliases>
+    <typeAlias type="com.syswin.temail.data.consistency.domain.ListenerEvent" alias="ListenerEvent" />
     <typeAlias alias="String" type="java.lang.String"/>
     <typeAlias alias="Integer" type="java.lang.Integer"/>
     <typeAlias alias="HashMap" type="java.util.HashMap"/>
