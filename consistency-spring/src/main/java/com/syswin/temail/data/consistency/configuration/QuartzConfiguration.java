@@ -20,7 +20,7 @@ public class QuartzConfiguration {
         .build();
   }
   @Bean
-  public Trigger uploadTaskTrigger() {
+  public Trigger taskTrigger() {
     CronScheduleBuilder scheduleBuilder = CronScheduleBuilder.cronSchedule("*/1 * * * * ?");
     return TriggerBuilder.newTrigger()
         .forJob(eventDataMonitorJob())

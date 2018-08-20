@@ -28,6 +28,16 @@ public class ListenerEvent {
     this.content = content;
   }
 
+  public ListenerEvent(Long id, String fromAddr, String toAddr, String status, Long contentId, String content, Timestamp insertTime) {
+    this.id = id;
+    this.fromAddr = fromAddr;
+    this.toAddr = toAddr;
+    this.status = status;
+    this.contentId = contentId;
+    this.content = content;
+    this.insertTime = insertTime;
+  }
+
   public Long getId() {
     return id;
   }
@@ -82,5 +92,19 @@ public class ListenerEvent {
 
   public void setInsertTime(Timestamp insertTime) {
     this.insertTime = insertTime;
+  }
+
+  @Override
+  public String toString() {
+    final StringBuilder sb = new StringBuilder("ListenerEvent{");
+    sb.append("id=").append(id);
+    sb.append(", fromAddr='").append(fromAddr).append('\'');
+    sb.append(", toAddr='").append(toAddr).append('\'');
+    sb.append(", status='").append(status).append('\'');
+    sb.append(", contentId=").append(contentId);
+    sb.append(", content='").append(content).append('\'');
+    sb.append(", insertTime=").append(insertTime);
+    sb.append('}');
+    return sb.toString();
   }
 }
