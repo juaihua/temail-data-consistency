@@ -10,13 +10,16 @@ import java.util.Map;
 import org.quartz.DisallowConcurrentExecution;
 import org.quartz.JobExecutionContext;
 import org.quartz.JobExecutionException;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
 import org.springframework.scheduling.quartz.QuartzJobBean;
 
 @DisallowConcurrentExecution
-public class EventDataMonitorJob extends QuartzJobBean{
+public class EventDataMonitorJob extends QuartzJobBean {
 
+  private static final Logger LOGGER = LoggerFactory.getLogger(EventDataMonitorJob.class);
   private final ListenerEventService listenerEventService;
 
   private final ThreadPoolTaskExecutor taskExecutor;
@@ -40,12 +43,13 @@ public class EventDataMonitorJob extends QuartzJobBean{
   @Override
   protected void executeInternal(JobExecutionContext context) throws JobExecutionException {
     Map<String, List<ListenerEvent>> sendMap = listenerEventService.findToBeSend();
-    sendMap.forEach((k,v)->{
-      taskExecutor.execute(()->{
+    sendMap.forEach((k, v) -> {
+      taskExecutor.execute(() -> {
         v.forEach(
-            x ->{
+            x -> {
               mqProducer.send(jsonConverter.toString(x));
-              listenerEventRepo.updateStatus(x.getId(),"send");
+              listenerEventRepo.updateStatus(x.getId(), "send");
+              LOGGER.debug("RocketMQ send data=>[{}]", x);
             }
         );
       });
