@@ -7,34 +7,28 @@
       <if test="id != null">
         id,
       </if>
-      <if test="fromAddr != null">
-        from_addr,
-      </if>
-      <if test="toAddr != null">
-        to_addr,
-      </if>
       <if test="status != null">
         status,
-      </if>
-      <if test="contentId != null">
-        content_id,
       </if>
       <if test="content != null">
         content,
       </if>
+      <if test="topic != null">
+        topic,
+      </if>
+      <if test="tag != null">
+        tag,
+      </if>
       <if test="insertTime != null">
-        time,
+        insert_time,
+      </if>
+      <if test="updateTime != null">
+        update_time,
       </if>
     </trim>
     <trim prefix="values (" suffix=")" suffixOverrides=",">
       <if test="id != null">
         #{id,jdbcType=INTEGER},
-      </if>
-      <if test="fromAddr != null">
-        #{fromAddr,jdbcType=VARCHAR},
-      </if>
-      <if test="toAddr != null">
-        #{toAddr,jdbcType=VARCHAR},
       </if>
       <if test="status != null">
         #{status,jdbcType=VARCHAR},
@@ -42,18 +36,27 @@
       <if test="contentId != null">
         #{contentId,jdbcType=BIGINT},
       </if>
+      <if test="topic != null">
+        #{topic,jdbcType=VARCHAR},
+      </if>
+      <if test="tag != null">
+        #{tag,jdbcType=VARCHAR},
+      </if>
       <if test="content != null">
         #{content,jdbcType=VARCHAR},
       </if>
       <if test="insertTime != null">
         #{insertTime,jdbcType=TIMESTAMP},
       </if>
+      <if test="updateTime != null">
+        #{updateTime,jdbcType=TIMESTAMP},
+      </if>
     </trim>
   </insert>
   <select id="selectReadyToSend" resultType="ListenerEvent">
-    select id, from_addr, to_addr, status, content_id, content, insert_time
+    select id, status, content, topic, tag, insert_time update_time
     from listener_event
-    where status = 'new'
+    where status = 'NEW'
     limit 0,100
   </select>
   <update id="updateStatusById">

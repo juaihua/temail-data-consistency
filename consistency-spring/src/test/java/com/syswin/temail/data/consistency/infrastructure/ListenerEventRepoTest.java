@@ -5,6 +5,9 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import com.syswin.temail.data.consistency.domain.ListenerEvent;
 import com.syswin.temail.data.consistency.domain.ListenerEventRepo;
+import com.syswin.temail.data.consistency.domain.SendingStatus;
+import java.sql.Timestamp;
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Random;
 import org.junit.Test;
@@ -24,7 +27,8 @@ public class ListenerEventRepoTest {
 
   @Test
   public void save() throws Exception {
-    ListenerEvent listenerEvent = new ListenerEvent(new Random().nextLong(),"test message");
+    ListenerEvent listenerEvent = new ListenerEvent(new Random().nextLong(),SendingStatus.NEW,"test content","groupmail","1",Timestamp.valueOf(
+        LocalDateTime.now()),Timestamp.valueOf(LocalDateTime.now()));
     Integer count = listenerEventRepo.save(listenerEvent);
     assertThat(count).isEqualTo(1);
     assertThat(listenerEvent.getId()).isNotNull();
@@ -36,7 +40,7 @@ public class ListenerEventRepoTest {
     List<ListenerEvent> events = listenerEventRepo.findReadyToSend();
     if(events.size()>0){
       events.forEach(x ->
-          assertThat(x.getStatus()).isEqualTo("new")
+          assertThat(x.getStatus()).isEqualTo(SendingStatus.NEW)
       );
     }
   }
@@ -49,9 +53,10 @@ public class ListenerEventRepoTest {
 
   @Test
   public void updateStatusToSendById() throws Exception {
-    ListenerEvent listenerEvent = new ListenerEvent(uniquify("Jfw"),uniquify("Wqo"),"new",new Random().nextLong(),uniquify("content"));
+    ListenerEvent listenerEvent = new ListenerEvent(new Random().nextLong(),SendingStatus.NEW,"test content","groupmail","1",Timestamp.valueOf(
+        LocalDateTime.now()),Timestamp.valueOf(LocalDateTime.now()));
     listenerEventRepo.save(listenerEvent);
-    Integer count = listenerEventRepo.updateStatus(listenerEvent.getId(), "send");
+    Integer count = listenerEventRepo.updateStatus(listenerEvent.getId(), SendingStatus.SEND);
     assertThat(count).isEqualTo(1);
   }
 }

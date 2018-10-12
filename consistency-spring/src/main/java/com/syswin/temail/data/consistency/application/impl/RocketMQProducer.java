@@ -1,25 +1,73 @@
 package com.syswin.temail.data.consistency.application.impl;
 
 import com.syswin.temail.data.consistency.application.MQProducer;
-import org.apache.rocketmq.spring.starter.core.RocketMQTemplate;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.messaging.support.MessageBuilder;
+import com.syswin.temail.data.consistency.domain.SendingMQMessageException;
+import com.syswin.temail.data.consistency.interfaces.EventDataMonitorJob;
+import java.util.UUID;
+import javax.annotation.PostConstruct;
+import javax.annotation.PreDestroy;
+import org.apache.rocketmq.client.exception.MQClientException;
+import org.apache.rocketmq.client.producer.DefaultMQProducer;
+import org.apache.rocketmq.client.producer.SendResult;
+import org.apache.rocketmq.client.producer.SendStatus;
+import org.apache.rocketmq.common.message.Message;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
+import org.springframework.util.StopWatch;
 
 @Service
 public class RocketMQProducer implements MQProducer{
 
-  private final RocketMQTemplate rocketMQTemplate;
+  private static final Logger LOGGER = LoggerFactory.getLogger(EventDataMonitorJob.class);
+  private final DefaultMQProducer producer = new DefaultMQProducer("data-consistency");
 
-  private static final String DESTINATION = "consistency-destination";
+  private String host;
 
-  @Autowired
-  public RocketMQProducer(RocketMQTemplate rocketMQTemplate) {
-    this.rocketMQTemplate = rocketMQTemplate;
+  public RocketMQProducer(@Value("${app.consistency.rocketmq.host}") String host) {
+    this.host = host;
+  }
+
+  @PostConstruct
+  public void start() throws MQClientException {
+    LOGGER.info("MQ：启动生产者");
+    producer.setNamesrvAddr(host);
+    producer.setInstanceName(UUID.randomUUID().toString());
+    producer.start();
   }
 
   @Override
-  public void send(String content) {
-    rocketMQTemplate.send(DESTINATION, MessageBuilder.withPayload(content).build());
+  public boolean send(String topic, String tag, String content) {
+    LOGGER.debug("sendMessage-topic={}->{}", topic, content);
+    Message mqMessage = new Message(topic, tag, (content).getBytes());
+    StopWatch stop = new StopWatch();
+    try {
+      stop.start();
+      SendResult result = producer.send(mqMessage, (mqs, msg, arg) -> {
+        Integer id = (Integer) arg;
+        int index = id % mqs.size();
+        return mqs.get(index);
+      }, 1);
+      if (result.getSendStatus().equals(SendStatus.SEND_OK)) {
+        return true;
+      } else {
+        LOGGER.error("mq send message FAILURE,topic=[{}],message=[{}]", topic, content);
+        return false;
+      }
+    } catch (Exception e) {
+      LOGGER.error("mq send message error,topic=[{}],message=[{}]", topic, content, e);
+      throw new SendingMQMessageException(e);
+    } finally {
+      stop.stop();
+    }
+  }
+
+  @PreDestroy
+  public void stop() {
+    if (producer != null) {
+      producer.shutdown();
+      LOGGER.info("MQ：关闭生产者");
+    }
   }
 }
