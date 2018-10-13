@@ -1,6 +1,5 @@
 package com.syswin.temail.data.consistency.infrastructure;
 
-import static com.seanyinx.github.unit.scaffolding.Randomness.uniquify;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import com.syswin.temail.data.consistency.domain.ListenerEvent;
@@ -56,7 +55,7 @@ public class ListenerEventRepoTest {
     ListenerEvent listenerEvent = new ListenerEvent(new Random().nextLong(),SendingStatus.NEW,"test content","groupmail","1",Timestamp.valueOf(
         LocalDateTime.now()),Timestamp.valueOf(LocalDateTime.now()));
     listenerEventRepo.save(listenerEvent);
-    Integer count = listenerEventRepo.updateStatus(listenerEvent.getId(), SendingStatus.SEND);
+    Integer count = listenerEventRepo.updateStatus(listenerEvent.getId(), SendingStatus.SENDED);
     assertThat(count).isEqualTo(1);
   }
 }

@@ -51,7 +51,7 @@ public class ListenerEventService {
         v.forEach(
             x -> {
               mqProducer.send(x.getTopic(),x.getTag(),jsonConverter.toString(x));
-              listenerEventRepo.updateStatus(x.getId(), SendingStatus.SEND);
+              listenerEventRepo.updateStatus(x.getId(), SendingStatus.SENDED);
               LOGGER.debug("RocketMQ send data=>[{}]", x);
             }
         );
