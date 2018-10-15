@@ -45,17 +45,19 @@ public class ListenerEventService {
   }
 
   public void doSendingMessage() {
-    Map<String, List<ListenerEvent>> sendMap = findToBeSend();
-    sendMap.forEach((k, v) -> {
-      taskExecutor.execute(() -> {
-        v.forEach(
-            x -> {
-              mqProducer.send(x.getTopic(),x.getTag(),jsonConverter.toString(x));
-              listenerEventRepo.updateStatus(x.getId(), SendingStatus.SENDED);
-              LOGGER.debug("RocketMQ send data=>[{}]", x);
-            }
-        );
+    while (true) {
+      Map<String, List<ListenerEvent>> sendMap = findToBeSend();
+      sendMap.forEach((k, v) -> {
+        taskExecutor.execute(() -> {
+          v.forEach(
+              x -> {
+                mqProducer.send(x.getTopic(),x.getTag(),x.getContent());
+                listenerEventRepo.updateStatus(x.getId(), SendingStatus.SENDED);
+                LOGGER.debug("RocketMQ send data=>[{}]", x);
+              }
+          );
+        });
       });
-    });
+    }
   }
 }

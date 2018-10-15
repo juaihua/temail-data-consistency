@@ -12,5 +12,5 @@ public interface ListenerEventMapper {
 
   List<ListenerEvent> selectReadyToSend();
 
-  Integer updateStatusById(@Param("id") Long id,@Param("status") Enum status);
+  int updateStatusById(@Param("id") long id,@Param("status") Enum status);
 }

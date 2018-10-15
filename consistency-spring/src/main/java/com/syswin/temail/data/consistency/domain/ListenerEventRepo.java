@@ -8,5 +8,5 @@ public interface ListenerEventRepo {
 
   List<ListenerEvent> findReadyToSend();
 
-  Integer updateStatus(Long id, Enum status);
+  int updateStatus(long id, Enum status);
 }

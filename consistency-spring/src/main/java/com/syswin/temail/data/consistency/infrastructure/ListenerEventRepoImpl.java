@@ -27,7 +27,7 @@ public class ListenerEventRepoImpl implements ListenerEventRepo {
   }
 
   @Override
-  public Integer updateStatus(Long id, Enum status) {
+  public int updateStatus(long id, Enum status) {
     return eventMapper.updateStatusById(id,status);
   }
 }
