@@ -20,7 +20,8 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 @Service
-public class ListenerEventService {
+@Transactional
+public class ListenerEventService2 {
 
   private static final Logger logger = LoggerFactory.getLogger(EventDataMonitorJob.class);
 
@@ -32,17 +33,14 @@ public class ListenerEventService {
 
   private final JsonConverter<ListenerEvent> jsonConverter;
 
-  ListenerEventService2 listenerEventService2;
   @Autowired
-  public ListenerEventService(ThreadPoolTaskExecutor taskExecutor, MQProducer mqProducer,
+  public ListenerEventService2(ThreadPoolTaskExecutor taskExecutor, MQProducer mqProducer,
       ListenerEventRepo listenerEventRepo,
-      JsonConverter<ListenerEvent> jsonConverter,
-      ListenerEventService2 listenerEventService2) {
+      JsonConverter<ListenerEvent> jsonConverter) {
     this.taskExecutor = taskExecutor;
     this.mqProducer = mqProducer;
     this.listenerEventRepo = listenerEventRepo;
     this.jsonConverter = jsonConverter;
-    this.listenerEventService2 =listenerEventService2;
   }
 
   public Map<String, List<ListenerEvent>> findToBeSend(){
@@ -56,30 +54,30 @@ public class ListenerEventService {
   public Future<String> doTask(String dbName){
     DynamicDataSourceContextHolder.set(dbName);
     logger.debug("doTask->"+dbName);
-    listenerEventService2.doSendingMessage();
+    doSendingMessage();
     DynamicDataSourceContextHolder.clearDataSourceKey();
     return new AsyncResult<>("database: " + dbName + " ,task error");
   }
 
-//  public void doSendingMessage(){
-//    while (true) {
-//      try {
-//        Thread.sleep(1000);
-//      } catch (InterruptedException e) {
-//        logger.error("error,thread is being interrupted!");
-//      }
-//      Map<String, List<ListenerEvent>> sendMap = findToBeSend();
-//      sendMap.forEach((k, v) -> {
-//        taskExecutor.execute(() -> {
-//          v.forEach(
-//              x -> {
-//                mqProducer.send(x.getTopic(),x.getTag(),x.getContent());
-//                listenerEventRepo.updateStatus(x.getId(), SendingStatus.SENDED);
-//                logger.debug("RocketMQ send data=>[{}]", x);
-//              }
-//          );
-//        });
-//      });
-//    }
-//  }
+  public void doSendingMessage(){
+    while (true) {
+      try {
+        Thread.sleep(1000);
+      } catch (InterruptedException e) {
+        logger.error("error,thread is being interrupted!");
+      }
+      Map<String, List<ListenerEvent>> sendMap = findToBeSend();
+      sendMap.forEach((k, v) -> {
+        taskExecutor.execute(() -> {
+          v.forEach(
+              x -> {
+                mqProducer.send(x.getTopic(),x.getTag(),x.getContent());
+                listenerEventRepo.updateStatus(x.getId(), SendingStatus.SENDED);
+                logger.debug("RocketMQ send data=>[{}]", x);
+              }
+          );
+        });
+      });
+    }
+  }
 }
