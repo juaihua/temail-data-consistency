@@ -1,6 +1,7 @@
 package com.syswin.temail.data.consistency.interfaces;
 
 import com.syswin.temail.data.consistency.application.ListenerEventService;
+import com.syswin.temail.data.consistency.application.ScheduledTasksMonitor;
 import com.syswin.temail.data.consistency.configuration.datasource.DynamicDataSourceContextHolder;
 import com.syswin.temail.data.consistency.configuration.datasource.SystemConfig;
 import com.syswin.temail.data.consistency.domain.TaskApplicationEvent;
@@ -9,6 +10,8 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.Future;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.ApplicationContext;
 import org.springframework.scheduling.annotation.Async;
@@ -17,6 +20,9 @@ import org.springframework.stereotype.Component;
 
 @Component
 public class EventDataMonitorJob {
+
+
+  private static final Logger logger = LoggerFactory.getLogger(EventDataMonitorJob.class);
 
   private final ListenerEventService listenerEventService;
 
@@ -35,7 +41,10 @@ public class EventDataMonitorJob {
   public void eventDataMonitorJob() {
     List<HikariConfig> db = systemConfig.getDb();
     Map<String,Future<String>> resultMap = new HashMap<>();
-    db.forEach(hikariConfig -> resultMap.put(hikariConfig.getPoolName(),doTask(hikariConfig.getPoolName())));
+    db.forEach(hikariConfig -> {
+      logger.debug("db:{} task started");
+      resultMap.put(hikariConfig.getPoolName(), doTask(hikariConfig.getPoolName()));
+    });
     context.publishEvent(new TaskApplicationEvent(resultMap));
   }
 
@@ -44,6 +53,6 @@ public class EventDataMonitorJob {
     DynamicDataSourceContextHolder.set(dbName);
     listenerEventService.doSendingMessage();
     DynamicDataSourceContextHolder.clearDataSourceKey();
-    return new AsyncResult<>("database: " + dbName + "");
+    return new AsyncResult<>("database: " + dbName + " ,task error");
   }
 }

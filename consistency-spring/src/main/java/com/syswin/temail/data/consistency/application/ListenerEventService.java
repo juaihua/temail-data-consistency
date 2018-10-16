@@ -17,7 +17,7 @@ import org.springframework.stereotype.Service;
 @Service
 public class ListenerEventService {
 
-  private static final Logger LOGGER = LoggerFactory.getLogger(EventDataMonitorJob.class);
+  private static final Logger logger = LoggerFactory.getLogger(EventDataMonitorJob.class);
 
   private final ThreadPoolTaskExecutor taskExecutor;
 
@@ -53,7 +53,7 @@ public class ListenerEventService {
               x -> {
                 mqProducer.send(x.getTopic(),x.getTag(),x.getContent());
                 listenerEventRepo.updateStatus(x.getId(), SendingStatus.SENDED);
-                LOGGER.debug("RocketMQ send data=>[{}]", x);
+                logger.debug("RocketMQ send data=>[{}]", x);
               }
           );
         });
