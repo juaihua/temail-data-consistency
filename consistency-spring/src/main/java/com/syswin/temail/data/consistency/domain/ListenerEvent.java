@@ -10,12 +10,12 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 public class ListenerEvent {
   private long id;
-  private Enum status;
+  private SendingStatus status;
   private String content;
   private String topic;
   private String tag;
-  private Timestamp insert_time;
-  private Timestamp update_time;
+  private Timestamp insertTime;
+  private Timestamp updateTime;
 
   public String key(){
     return new StringBuilder().append(topic).append("%").append(tag).toString();

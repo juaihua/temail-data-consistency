@@ -38,7 +38,7 @@ public class EventDataMonitorJob {
     this.context = context;
   }
 
-  public void eventDataMonitorJob() {
+  public void eventDataMonitorJob(){
     List<HikariConfig> db = systemConfig.getDb();
     Map<String,Future<String>> resultMap = new HashMap<>();
     db.forEach(hikariConfig -> {
@@ -49,7 +49,7 @@ public class EventDataMonitorJob {
   }
 
   @Async("checkAndSend")
-  public Future<String> doTask(String dbName) {
+  public Future<String> doTask(String dbName){
     DynamicDataSourceContextHolder.set(dbName);
     listenerEventService.doSendingMessage();
     DynamicDataSourceContextHolder.clearDataSourceKey();

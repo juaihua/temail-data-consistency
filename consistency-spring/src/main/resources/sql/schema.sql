@@ -1,7 +1,7 @@
 
 CREATE TABLE `listener_event` (
   `id` bigint(20) NOT NULL AUTO_INCREMENT COMMENT '主键',
-  `status` varchar(10) NOT NULL DEFAULT 'new' COMMENT '监听事件类型new pending complete',
+  `status` varchar(10) NOT NULL DEFAULT 'new' COMMENT '监听事件类型NEW SENDED',
   `content` mediumtext DEFAULT NULL COMMENT '消息内容',
   `topic` varchar(100) DEFAULT NULL,
   `tag` varchar(32) DEFAULT NULL,

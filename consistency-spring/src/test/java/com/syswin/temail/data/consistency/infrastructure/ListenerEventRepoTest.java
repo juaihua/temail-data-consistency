@@ -2,6 +2,7 @@ package com.syswin.temail.data.consistency.infrastructure;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import com.syswin.temail.data.consistency.TestApplication;
 import com.syswin.temail.data.consistency.domain.ListenerEvent;
 import com.syswin.temail.data.consistency.domain.ListenerEventRepo;
 import com.syswin.temail.data.consistency.domain.SendingStatus;
@@ -17,7 +18,7 @@ import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.junit4.SpringRunner;
 
 @RunWith(SpringRunner.class)
-@SpringBootTest
+@SpringBootTest(classes = TestApplication.class)
 @ActiveProfiles("test")
 public class ListenerEventRepoTest {
 

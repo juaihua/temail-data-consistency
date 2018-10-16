@@ -13,8 +13,10 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 @Service
+@Transactional
 public class ListenerEventService {
 
   private static final Logger logger = LoggerFactory.getLogger(EventDataMonitorJob.class);
@@ -44,8 +46,13 @@ public class ListenerEventService {
         .collect(Collectors.groupingBy(ListenerEvent::key));
   }
 
-  public void doSendingMessage() {
+  public void doSendingMessage(){
     while (true) {
+      try {
+        Thread.sleep(1000);
+      } catch (InterruptedException e) {
+        logger.error("error,thread is being interrupted!");
+      }
       Map<String, List<ListenerEvent>> sendMap = findToBeSend();
       sendMap.forEach((k, v) -> {
         taskExecutor.execute(() -> {

@@ -10,7 +10,7 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 public class ListenerEvent {
   private long id;
-  private Enum status;
+  private SendingStatus status;
   private String content;
   private String topic;
   private String tag;

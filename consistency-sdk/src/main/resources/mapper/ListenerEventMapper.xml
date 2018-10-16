@@ -33,9 +33,6 @@
       <if test="status != null">
         #{status,jdbcType=VARCHAR},
       </if>
-      <if test="contentId != null">
-        #{contentId,jdbcType=BIGINT},
-      </if>
       <if test="topic != null">
         #{topic,jdbcType=VARCHAR},
       </if>
