@@ -56,7 +56,7 @@ public class ListenerEventService {
   public Future<String> doTask(String dbName){
     DynamicDataSourceContextHolder.set(dbName);
     logger.debug("doTask->"+dbName);
-    listenerEventService2.doSendingMessage();
+    listenerEventService2.doSendingMessage(dbName);
     DynamicDataSourceContextHolder.clearDataSourceKey();
     return new AsyncResult<>("database: " + dbName + " ,task error");
   }
