@@ -1,5 +1,6 @@
 package com.syswin.temail.data.consistency.application;
 
+import com.syswin.temail.data.consistency.configuration.datasource.DynamicDataSourceContextHolder;
 import com.syswin.temail.data.consistency.domain.ListenerEvent;
 import com.syswin.temail.data.consistency.domain.ListenerEventRepo;
 import com.syswin.temail.data.consistency.domain.SendingStatus;
@@ -7,10 +8,13 @@ import com.syswin.temail.data.consistency.interfaces.EventDataMonitorJob;
 import com.syswin.temail.data.consistency.utils.JsonConverter;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.Future;
 import java.util.stream.Collectors;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.scheduling.annotation.Async;
+import org.springframework.scheduling.annotation.AsyncResult;
 import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -44,6 +48,15 @@ public class ListenerEventService {
         .findReadyToSend()
         .stream()
         .collect(Collectors.groupingBy(ListenerEvent::key));
+  }
+
+  @Async("taskExecutor")
+  public Future<String> doTask(String dbName){
+    DynamicDataSourceContextHolder.set(dbName);
+    logger.debug("doTask->"+dbName);
+    doSendingMessage();
+    DynamicDataSourceContextHolder.clearDataSourceKey();
+    return new AsyncResult<>("database: " + dbName + " ,task error");
   }
 
   public void doSendingMessage(){

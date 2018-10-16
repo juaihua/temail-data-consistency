@@ -5,21 +5,21 @@ public class DynamicDataSourceContextHolder {
   /**
    * Maintain variable for every thread, to avoid effect other thread
    */
-  private static final ThreadLocal<String> CONTEXT_HOLDER = ThreadLocal.withInitial(DataSourceKey.master::name);
+  private static final ThreadLocal<String> CONTEXT_HOLDER = ThreadLocal.withInitial(()->"");
 
   /**
    * Use write data source.
    */
-  public static void useMasterDataSource() {
-    CONTEXT_HOLDER.set(DataSourceKey.master.name());
-  }
+//  public static void useMasterDataSource() {
+//    CONTEXT_HOLDER.set(DataSourceKey.master.name());
+//  }
 
   /**
    * Use slave data source.
    */
-  public static void useSlaveDataSource() {
-    CONTEXT_HOLDER.set(DataSourceKey.slave.name());
-  }
+//  public static void useSlaveDataSource() {
+//    CONTEXT_HOLDER.set(DataSourceKey.slave.name());
+//  }
 
   public static void set(String name) {
     CONTEXT_HOLDER.set(name);

@@ -16,13 +16,13 @@ public class ScheduledTasksMonitor implements ApplicationListener<TaskApplicatio
 
   private static final Logger logger = LoggerFactory.getLogger(ScheduledTasksMonitor.class);
 
-  private final EventDataMonitorJob eventDataMonitorJob;
+  private final ListenerEventService listenerEventService;
 
   Map<String,Future<String>> result = null;
 
   @Autowired
-  public ScheduledTasksMonitor(EventDataMonitorJob eventDataMonitorJob) {
-    this.eventDataMonitorJob = eventDataMonitorJob;
+  public ScheduledTasksMonitor(ListenerEventService listenerEventService) {
+    this.listenerEventService = listenerEventService;
   }
 
   @Scheduled(fixedRate = 1000)
@@ -34,7 +34,7 @@ public class ScheduledTasksMonitor implements ApplicationListener<TaskApplicatio
           try {
             future.get();
           } catch (Exception e) {
-            eventDataMonitorJob.doTask(key);
+            listenerEventService.doTask(key);
             logger.error("EXCEPTION->" + e.getMessage());
           }
           result.remove(key);

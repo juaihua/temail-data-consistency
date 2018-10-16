@@ -42,17 +42,10 @@ public class EventDataMonitorJob {
     List<HikariConfig> db = systemConfig.getDb();
     Map<String,Future<String>> resultMap = new HashMap<>();
     db.forEach(hikariConfig -> {
-      logger.debug("db:{} task started");
-      resultMap.put(hikariConfig.getPoolName(), doTask(hikariConfig.getPoolName()));
+      logger.debug("db:{} task started",hikariConfig.getPoolName());
+      resultMap.put(hikariConfig.getPoolName(), listenerEventService.doTask(hikariConfig.getPoolName()));
     });
     context.publishEvent(new TaskApplicationEvent(resultMap));
   }
 
-  @Async("checkAndSend")
-  public Future<String> doTask(String dbName){
-    DynamicDataSourceContextHolder.set(dbName);
-    listenerEventService.doSendingMessage();
-    DynamicDataSourceContextHolder.clearDataSourceKey();
-    return new AsyncResult<>("database: " + dbName + " ,task error");
-  }
 }
