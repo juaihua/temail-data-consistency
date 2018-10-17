@@ -6,9 +6,9 @@ CREATE TABLE `listener_event` (
   `topic` varchar(100) DEFAULT NULL,
   `tag` varchar(32) DEFAULT NULL,
   `insert_time` timestamp NULL DEFAULT CURRENT_TIMESTAMP COMMENT '生成时间',
-  `update_time` timestamp NULL DEFAULT CURRENT_TIMESTAMP COMMENT '修改时间',
+  `update_time` timestamp NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '修改时间',
   PRIMARY KEY (`id`)
-) ENGINE=InnoDB AUTO_INCREMENT=6 DEFAULT CHARSET=utf8mb4;
+) ENGINE=InnoDB AUTO_INCREMENT=6 DEFAULT CHARSET=utf8;
 
 insert into `listener_event` ( `status`, `content`, `topic`, `tag`, `insert_time`, `update_time`) values ( 'NEW', 'test1', 'bob', 'alice', '2018-08-17 10:21:31', '2018-08-17 10:23:45');
 insert into `listener_event` ( `status`, `content`, `topic`, `tag`, `insert_time`, `update_time`) values ( 'NEW', 'test2', 'jack', 'alice', '2018-08-17 10:22:01', '2018-08-17 10:24:50');
