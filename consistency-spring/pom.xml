@@ -137,12 +137,6 @@
           <mainClass>com.syswin.temail.data.consistency.ConsistencyApplication</mainClass>
           <layout>ZIP</layout>
           <executable>true</executable>
-          <includes>
-            <include>
-              <groupId>com.syswin.temail</groupId>
-              <artifactId>consistency-core</artifactId>
-            </include>
-          </includes>
         </configuration>
         <executions>
           <execution>
