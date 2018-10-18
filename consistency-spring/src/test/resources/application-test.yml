@@ -2,7 +2,14 @@ spring:
   datasource:
     driver-class-name: org.h2.Driver
     url: jdbc:h2:mem:toon;MODE=MYSQL;INIT=RUNSCRIPT FROM './src/test/resources/init.sql'
+  autoconfigure:
+    exclude:
+      - com.systoon.integration.spring.boot.disconf.DisconfAutoConfiguration
+      - com.systoon.integration.spring.boot.disconf.context.config.ConfigurationPropertiesRebinderAutoConfiguration
+      - com.systoon.integration.spring.boot.disconf.context.config.RefreshAutoConfiguration
+
 
 mybatis:
   config-location: classpath:mybatis/mybatis-config.xml
   mapper-locations: classpath*:mapper/*Mapper.xml
+
