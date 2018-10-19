@@ -1,13 +1,11 @@
 package com.syswin.temail.data.consistency.infrastructure;
 
 import com.syswin.temail.data.consistency.domain.ListenerEvent;
-import java.util.List;
-import org.apache.ibatis.annotations.Mapper;
-import org.apache.ibatis.annotations.Param;
-import org.springframework.stereotype.Repository;
+import org.apache.ibatis.annotations.Insert;
 
-@Mapper
 public interface ListenerEventMapper {
 
+  @Insert("insert into listener_event(status,content,topic,tag) values "
+      + "(#{status},#{content},#{topic},#{tag})")
   Integer insert(ListenerEvent listenerEvent);
 }

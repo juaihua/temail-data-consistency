@@ -1,12 +1,12 @@
 package com.syswin.temail.data.consistency;
 
 import com.syswin.temail.data.consistency.application.ListenerEventService;
+import com.syswin.temail.data.consistency.infrastructure.ListenerEventMapper;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
 @Configuration
-@ConditionalOnClass(name = "dataSource")
 public class ConsistencyAutoConfiguration {
 
   @Bean
