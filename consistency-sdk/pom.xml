@@ -23,11 +23,6 @@
   </dependencyManagement>
   <dependencies>
     <dependency>
-      <groupId>com.syswin.temail</groupId>
-      <artifactId>consistency-core</artifactId>
-      <version>1.0.0-snapshot</version>
-    </dependency>
-    <dependency>
       <groupId>org.springframework.boot</groupId>
       <artifactId>spring-boot-starter</artifactId>
       <exclusions>
