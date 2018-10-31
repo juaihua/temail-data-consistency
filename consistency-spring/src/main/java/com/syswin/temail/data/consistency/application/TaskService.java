@@ -50,7 +50,7 @@ public class TaskService {
           Thread.sleep(1000);
           continue;
         } catch (InterruptedException e) {
-          logger.error("error,thread is being interrupted!");
+          logger.warn("error,thread is being interrupted!");
         }
       }
       sendInLoop(dbName, sendMap);
