@@ -87,7 +87,7 @@ public class TaskService {
       try {
         Thread.sleep(100);
       } catch (InterruptedException e) {
-        logger.error("error,thread is being interrupted!");
+        logger.warn("error,thread is being interrupted!");
       }
       boolean flag = false;
       for (Future<?> result : results) {
