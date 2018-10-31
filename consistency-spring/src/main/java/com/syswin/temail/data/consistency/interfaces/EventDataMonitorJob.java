@@ -1,8 +1,6 @@
 package com.syswin.temail.data.consistency.interfaces;
 
 import com.syswin.temail.data.consistency.application.ListenerEventService;
-import com.syswin.temail.data.consistency.application.ScheduledTasksMonitor;
-import com.syswin.temail.data.consistency.configuration.datasource.DynamicDataSourceContextHolder;
 import com.syswin.temail.data.consistency.configuration.datasource.SystemConfig;
 import com.syswin.temail.data.consistency.domain.TaskApplicationEvent;
 import com.zaxxer.hikari.HikariConfig;
@@ -14,8 +12,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.ApplicationContext;
-import org.springframework.scheduling.annotation.Async;
-import org.springframework.scheduling.annotation.AsyncResult;
 import org.springframework.stereotype.Component;
 
 @Component

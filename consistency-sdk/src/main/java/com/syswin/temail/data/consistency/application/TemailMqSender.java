@@ -1,6 +1,5 @@
 package com.syswin.temail.data.consistency.application;
 
-
 import com.syswin.temail.data.consistency.domain.ListenerEvent;
 import com.syswin.temail.data.consistency.domain.SendingStatus;
 import com.syswin.temail.data.consistency.infrastructure.ListenerEventMapper;
