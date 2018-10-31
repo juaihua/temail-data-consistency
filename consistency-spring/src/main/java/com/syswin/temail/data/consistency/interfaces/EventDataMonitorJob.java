@@ -38,7 +38,7 @@ public class EventDataMonitorJob {
     List<HikariConfig> db = systemConfig.getDb();
     Map<String,Future<String>> resultMap = new HashMap<>();
     db.forEach(hikariConfig -> {
-      logger.debug("db:{} task started",hikariConfig.getPoolName());
+      logger.info("db:{} task started",hikariConfig.getPoolName());
       resultMap.put(hikariConfig.getPoolName(), listenerEventService.doTask(hikariConfig.getPoolName()));
     });
     context.publishEvent(new TaskApplicationEvent(resultMap));
