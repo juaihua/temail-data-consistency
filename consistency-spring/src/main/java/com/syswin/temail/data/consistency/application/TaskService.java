@@ -2,7 +2,6 @@ package com.syswin.temail.data.consistency.application;
 
 import com.syswin.temail.data.consistency.configuration.datasource.DynamicDataSourceContextHolder;
 import com.syswin.temail.data.consistency.domain.ListenerEvent;
-import com.syswin.temail.data.consistency.domain.ListenerEventRepo;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
@@ -20,48 +19,35 @@ public class TaskService {
 
   private final ThreadPoolTaskExecutor taskExecutor;
 
-  private final MQProducer mqProducer;
-
-  private final ListenerEventRepo listenerEventRepo;
-
   @Autowired
-  private TaskService2 service2;
+  private HandleEventDataService service2;
   @Autowired
-  public TaskService(ThreadPoolTaskExecutor taskExecutor, MQProducer mqProducer,
-      ListenerEventRepo listenerEventRepo) {
+  public TaskService(ThreadPoolTaskExecutor taskExecutor) {
     this.taskExecutor = taskExecutor;
-    this.mqProducer = mqProducer;
-    this.listenerEventRepo = listenerEventRepo;
   }
 
   public Map<String, List<ListenerEvent>> findToBeSend(String dbName) {
     DynamicDataSourceContextHolder.set(dbName);
-
     Map<String, List<ListenerEvent>> toBeSend = service2.findToBeSend();
     DynamicDataSourceContextHolder.clearDataSourceKey();
     return toBeSend;
-//    return listenerEventRepo
-//        .findReadyToSend()
-//        .stream()
-//        .collect(Collectors.groupingBy(ListenerEvent::key));
   }
 
-//  @Transactional
   public void doSendingMessage(String dbName) {
-//    while (true) {
-    logger.info("-----------------doSendingMessage");
+    while (true) {
+    logger.debug("doSendingMessage");
       Map<String, List<ListenerEvent>> sendMap = findToBeSend(dbName);
       if (sendMap.isEmpty()) {
         try {
-          logger.info("dbName:{},no data,thread sleeping", dbName);
+          logger.debug("dbName:{},no data,thread sleeping", dbName);
           Thread.sleep(1000);
-//          continue;
+          continue;
         } catch (InterruptedException e) {
           logger.warn("error,thread is being interrupted!");
         }
       }
       sendInLoop(dbName, sendMap);
-//    }
+    }
   }
 
   public void sendInLoop(String dbName, Map<String, List<ListenerEvent>> sendMap) {
@@ -80,32 +66,26 @@ public class TaskService {
       });
       results.add(result);
     });
-//    checkTask(results);
+    checkTask(results);
   }
 
-//  @Transactional
-//  public void sendAndUpdate(ListenerEvent event) {
-//    listenerEventRepo.updateStatus(event.getId(), SendingStatus.SENDED);
-//    mqProducer.send(event.getTopic(), event.getTag(), event.getContent());
-//  }
-//
-//  private void checkTask(LinkedList<Future<?>> results) {
-//    while (true) {
-//      try {
-//        Thread.sleep(100);
-//      } catch (InterruptedException e) {
-//        logger.warn("error,thread is being interrupted!");
-//      }
-//      boolean flag = false;
-//      for (Future<?> result : results) {
-//        if (!result.isDone()) {
-//          continue;
-//        }
-//        flag = result.isDone();
-//      }
-//      if (flag) {
-//        break;
-//      }
-//    }
-//  }
+  private void checkTask(LinkedList<Future<?>> results) {
+    while (true) {
+      try {
+        Thread.sleep(100);
+      } catch (InterruptedException e) {
+        logger.warn("error,thread is being interrupted!");
+      }
+      boolean flag = false;
+      for (Future<?> result : results) {
+        if (!result.isDone()) {
+          continue;
+        }
+        flag = result.isDone();
+      }
+      if (flag) {
+        break;
+      }
+    }
+  }
 }
