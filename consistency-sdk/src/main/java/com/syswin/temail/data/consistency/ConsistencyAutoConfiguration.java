@@ -1,8 +1,6 @@
 package com.syswin.temail.data.consistency;
 
-import com.syswin.temail.data.consistency.application.ListenerEventService;
-import com.syswin.temail.data.consistency.infrastructure.ListenerEventMapper;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
+import com.syswin.temail.data.consistency.application.TemailMqSender;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
@@ -10,7 +8,7 @@ import org.springframework.context.annotation.Configuration;
 public class ConsistencyAutoConfiguration {
 
   @Bean
-  public ListenerEventService listenerEventService(){
-    return new ListenerEventService();
+  public TemailMqSender temailMqSender(){
+    return new TemailMqSender();
   }
 }

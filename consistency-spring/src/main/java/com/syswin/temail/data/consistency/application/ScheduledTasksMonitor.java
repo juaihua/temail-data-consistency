@@ -1,7 +1,6 @@
 package com.syswin.temail.data.consistency.application;
 
 import com.syswin.temail.data.consistency.domain.TaskApplicationEvent;
-import com.syswin.temail.data.consistency.interfaces.EventDataMonitorJob;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.Map;

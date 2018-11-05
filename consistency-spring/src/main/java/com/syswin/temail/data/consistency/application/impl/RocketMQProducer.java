@@ -2,7 +2,6 @@ package com.syswin.temail.data.consistency.application.impl;
 
 import com.syswin.temail.data.consistency.application.MQProducer;
 import com.syswin.temail.data.consistency.domain.SendingMQMessageException;
-import com.syswin.temail.data.consistency.interfaces.EventDataMonitorJob;
 import java.util.UUID;
 import javax.annotation.PostConstruct;
 import javax.annotation.PreDestroy;
@@ -20,7 +19,7 @@ import org.springframework.util.StopWatch;
 @Service
 public class RocketMQProducer implements MQProducer{
 
-  private static final Logger LOGGER = LoggerFactory.getLogger(EventDataMonitorJob.class);
+  private static final Logger logger = LoggerFactory.getLogger(RocketMQProducer.class);
   private final DefaultMQProducer producer = new DefaultMQProducer("data-consistency");
 
   private String host;
@@ -31,15 +30,20 @@ public class RocketMQProducer implements MQProducer{
 
   @PostConstruct
   public void start() throws MQClientException {
-    LOGGER.info("MQ：启动生产者");
+    logger.info("MQ：启动生产者");
     producer.setNamesrvAddr(host);
     producer.setInstanceName(UUID.randomUUID().toString());
     producer.start();
   }
-
+public volatile static  int count =0;
   @Override
   public boolean send(String topic, String tag, String content) {
-    LOGGER.debug("sendMessage-topic={}->{}", topic, content);
+    count ++;
+    logger.info("----------->[{}]sendMessage-topic={}->{}",count, topic, tag);
+
+    if("1".equals(tag) && count > 2){
+      throw new SendingMQMessageException("mq send message FAILURE");
+    }
     Message mqMessage = new Message(topic, tag, (content).getBytes());
     StopWatch stop = new StopWatch();
     try {
@@ -52,11 +56,11 @@ public class RocketMQProducer implements MQProducer{
       if (result.getSendStatus().equals(SendStatus.SEND_OK)) {
         return true;
       } else {
-        LOGGER.error("mq send message FAILURE,topic=[{}],message=[{}]", topic, content);
-        return false;
+        logger.error("mq send message FAILURE,topic=[{}],message=[{}]", topic, content);
+        throw new SendingMQMessageException("mq send message FAILURE");
       }
     } catch (Exception e) {
-      LOGGER.error("mq send message error,topic=[{}],message=[{}]", topic, content, e);
+      logger.error("mq send message error,topic=[{}],message=[{}]", topic, content, e);
       throw new SendingMQMessageException(e);
     } finally {
       stop.stop();
@@ -67,7 +71,7 @@ public class RocketMQProducer implements MQProducer{
   public void stop() {
     if (producer != null) {
       producer.shutdown();
-      LOGGER.info("MQ：关闭生产者");
+      logger.info("MQ：关闭生产者");
     }
   }
 }
