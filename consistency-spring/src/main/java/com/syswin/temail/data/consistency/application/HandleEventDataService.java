@@ -32,7 +32,7 @@ public class HandleEventDataService {
 
   @Transactional
   public void sendAndUpdate(ListenerEvent event) {
-    listenerEventRepo.updateStatus(event.getId(), SendingStatus.SENDED);
+    listenerEventRepo.updateStatus(event.getId(), SendingStatus.SENT);
     mqProducer.send(event.getTopic(), event.getTag(), event.getContent());
   }
 }

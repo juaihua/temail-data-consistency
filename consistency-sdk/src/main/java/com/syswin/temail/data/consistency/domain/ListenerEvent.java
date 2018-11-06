@@ -21,8 +21,8 @@ public class ListenerEvent {
   private String topic;
   @NonNull
   private String tag;
-  private Timestamp insert_time;
-  private Timestamp update_time;
+  private Timestamp createTime;
+  private Timestamp updateTime;
 
   public String key(){
     return new StringBuilder().append(topic).append("%").append(tag).toString();
