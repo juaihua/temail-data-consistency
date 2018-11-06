@@ -123,6 +123,12 @@
           <mainClass>com.syswin.temail.data.consistency.ConsistencyApplication</mainClass>
           <layout>ZIP</layout>
           <executable>true</executable>
+          <includes>
+            <include>
+              <groupId>nothing</groupId>
+              <artifactId>nothing</artifactId>
+            </include>
+          </includes>
         </configuration>
         <executions>
           <execution>

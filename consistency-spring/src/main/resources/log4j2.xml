@@ -20,7 +20,7 @@
     </Async>
   </appenders>
   <loggers>
-    <root level="info">
+    <root level="warn">
       <appender-ref ref="CONSOLE"/>
       <appender-ref ref="Async"/>
     </root>
