@@ -49,11 +49,12 @@ public class RocketMQProducer implements MQProducer{
       if (result.getSendStatus().equals(SendStatus.SEND_OK)) {
         return true;
       } else {
+        logger.error("result status:[{}]",result.getSendStatus());
         logger.error("mq send message FAILURE,topic=[{}]", topic);
         throw new SendingMQMessageException("mq send message FAILURE");
       }
     } catch (Exception e) {
-      logger.error("mq send message error,topic=[{}]", topic);
+      logger.error("mq send message error=[{}],topic=[{}]", e,topic);
       throw new SendingMQMessageException(e);
     } finally {
       stop.stop();
