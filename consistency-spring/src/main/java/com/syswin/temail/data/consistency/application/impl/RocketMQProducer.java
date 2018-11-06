@@ -35,15 +35,8 @@ public class RocketMQProducer implements MQProducer{
     producer.setInstanceName(UUID.randomUUID().toString());
     producer.start();
   }
-public volatile static  int count =0;
   @Override
   public boolean send(String topic, String tag, String content) {
-    count ++;
-    logger.info("----------->[{}]sendMessage-topic={}->{}",count, topic, tag);
-
-    if("1".equals(tag) && count > 2){
-      throw new SendingMQMessageException("mq send message FAILURE");
-    }
     Message mqMessage = new Message(topic, tag, (content).getBytes());
     StopWatch stop = new StopWatch();
     try {
