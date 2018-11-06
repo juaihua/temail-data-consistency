@@ -15,6 +15,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StopWatch;
+import org.springframework.util.StringUtils;
 
 @Service
 public class RocketMQProducer implements MQProducer{
@@ -39,6 +40,7 @@ public class RocketMQProducer implements MQProducer{
   public boolean send(String topic, String tag, String content) {
     Message mqMessage = new Message(topic, tag, (content).getBytes());
     StopWatch stop = new StopWatch();
+    long count = 0;
     try {
       stop.start();
       SendResult result = producer.send(mqMessage, (mqs, msg, arg) -> {
@@ -49,12 +51,18 @@ public class RocketMQProducer implements MQProducer{
       if (result.getSendStatus().equals(SendStatus.SEND_OK)) {
         return true;
       } else {
+        if(!StringUtils.isEmpty(content)){
+          count = content.length();
+        }
         logger.error("result status:[{}]",result.getSendStatus());
-        logger.error("mq send message FAILURE,topic=[{}]", topic);
+        logger.error("mq send message FAILURE,topic=[{}],content's length=[{}]", topic, count);
         throw new SendingMQMessageException("mq send message FAILURE");
       }
     } catch (Exception e) {
-      logger.error("mq send message error=[{}],topic=[{}]", e,topic);
+      if(!StringUtils.isEmpty(content)){
+        count = content.length();
+      }
+      logger.error("mq send message error=[{}],topic=[{}],content's length=[{}]", e, topic, count);
       throw new SendingMQMessageException(e);
     } finally {
       stop.stop();
