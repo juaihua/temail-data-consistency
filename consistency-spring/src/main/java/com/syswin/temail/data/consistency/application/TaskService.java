@@ -20,15 +20,17 @@ public class TaskService {
   private final ThreadPoolTaskExecutor taskExecutor;
 
   @Autowired
-  private HandleEventDataService service2;
+  private HandleEventDataService dataService;
+
   @Autowired
-  public TaskService(ThreadPoolTaskExecutor taskExecutor) {
+  public TaskService(ThreadPoolTaskExecutor taskExecutor, HandleEventDataService dataService) {
     this.taskExecutor = taskExecutor;
+    this.dataService = dataService;
   }
 
   public Map<String, List<ListenerEvent>> findToBeSend(String dbName) {
     DynamicDataSourceContextHolder.set(dbName);
-    Map<String, List<ListenerEvent>> toBeSend = service2.findToBeSend();
+    Map<String, List<ListenerEvent>> toBeSend = dataService.findToBeSend();
     DynamicDataSourceContextHolder.clearDataSourceKey();
     return toBeSend;
   }
@@ -58,7 +60,7 @@ public class TaskService {
             x -> {
               DynamicDataSourceContextHolder.set(dbName);
               logger.debug("doTask-in-executer->" + dbName);
-              service2.sendAndUpdate(x);
+              dataService.sendAndUpdate(x);
               logger.debug("RocketMQ send data=>[{}]", x);
               DynamicDataSourceContextHolder.clearDataSourceKey();
             }
