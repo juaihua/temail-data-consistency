@@ -19,8 +19,7 @@ public class TaskService {
 
   private final ThreadPoolTaskExecutor taskExecutor;
 
-  @Autowired
-  private HandleEventDataService dataService;
+  private final HandleEventDataService dataService;
 
   @Autowired
   public TaskService(ThreadPoolTaskExecutor taskExecutor, HandleEventDataService dataService) {
