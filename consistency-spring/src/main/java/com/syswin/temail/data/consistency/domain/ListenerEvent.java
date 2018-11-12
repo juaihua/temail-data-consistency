@@ -6,6 +6,7 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
+import lombok.ToString;
 
 @Data
 @AllArgsConstructor
@@ -16,12 +17,13 @@ public class ListenerEvent {
   @NonNull
   private SendingStatus status;
   @NonNull
+  @ToString.Exclude
   private String content;
   @NonNull
   private String topic;
   @NonNull
   private String tag;
-  private Timestamp insertTime;
+  private Timestamp createTime;
   private Timestamp updateTime;
 
   public String key(){

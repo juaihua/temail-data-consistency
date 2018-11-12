@@ -2,7 +2,6 @@ package com.syswin.temail.data.consistency.application.impl;
 
 import com.syswin.temail.data.consistency.application.MQProducer;
 import com.syswin.temail.data.consistency.domain.SendingMQMessageException;
-import com.syswin.temail.data.consistency.interfaces.EventDataMonitorJob;
 import java.util.UUID;
 import javax.annotation.PostConstruct;
 import javax.annotation.PreDestroy;
@@ -16,11 +15,12 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StopWatch;
+import org.springframework.util.StringUtils;
 
 @Service
 public class RocketMQProducer implements MQProducer{
 
-  private static final Logger LOGGER = LoggerFactory.getLogger(EventDataMonitorJob.class);
+  private static final Logger logger = LoggerFactory.getLogger(RocketMQProducer.class);
   private final DefaultMQProducer producer = new DefaultMQProducer("data-consistency");
 
   private String host;
@@ -31,17 +31,16 @@ public class RocketMQProducer implements MQProducer{
 
   @PostConstruct
   public void start() throws MQClientException {
-    LOGGER.info("MQ：启动生产者");
+    logger.info("MQ：启动生产者");
     producer.setNamesrvAddr(host);
     producer.setInstanceName(UUID.randomUUID().toString());
     producer.start();
   }
-
   @Override
   public boolean send(String topic, String tag, String content) {
-    LOGGER.debug("sendMessage-topic={}->{}", topic, content);
     Message mqMessage = new Message(topic, tag, (content).getBytes());
     StopWatch stop = new StopWatch();
+    long count = 0;
     try {
       stop.start();
       SendResult result = producer.send(mqMessage, (mqs, msg, arg) -> {
@@ -52,11 +51,18 @@ public class RocketMQProducer implements MQProducer{
       if (result.getSendStatus().equals(SendStatus.SEND_OK)) {
         return true;
       } else {
-        LOGGER.error("mq send message FAILURE,topic=[{}],message=[{}]", topic, content);
-        return false;
+        if(!StringUtils.isEmpty(content)){
+          count = content.length();
+        }
+        logger.error("result status:[{}]",result.getSendStatus());
+        logger.error("mq send message FAILURE,topic=[{}],content's length=[{}]", topic, count);
+        throw new SendingMQMessageException("mq send message FAILURE");
       }
     } catch (Exception e) {
-      LOGGER.error("mq send message error,topic=[{}],message=[{}]", topic, content, e);
+      if(!StringUtils.isEmpty(content)){
+        count = content.length();
+      }
+      logger.error("mq send message error=[{}],topic=[{}],content's length=[{}]", e, topic, count);
       throw new SendingMQMessageException(e);
     } finally {
       stop.stop();
@@ -67,7 +73,7 @@ public class RocketMQProducer implements MQProducer{
   public void stop() {
     if (producer != null) {
       producer.shutdown();
-      LOGGER.info("MQ：关闭生产者");
+      logger.info("MQ：关闭生产者");
     }
   }
 }

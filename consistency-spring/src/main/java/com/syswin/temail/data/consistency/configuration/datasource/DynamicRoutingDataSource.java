@@ -10,7 +10,7 @@ import org.springframework.jdbc.datasource.lookup.AbstractRoutingDataSource;
 
 public class DynamicRoutingDataSource extends AbstractRoutingDataSource {
 
-    private final Logger logger = LoggerFactory.getLogger(getClass());
+    private final Logger logger = LoggerFactory.getLogger(DynamicRoutingDataSource.class);
 
     /**
      * Set dynamic DataSource to Application Context
