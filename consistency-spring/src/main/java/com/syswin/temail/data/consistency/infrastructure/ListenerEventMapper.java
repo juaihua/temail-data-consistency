@@ -8,7 +8,7 @@ import org.springframework.stereotype.Repository;
 @Repository
 public interface ListenerEventMapper {
 
-  List<ListenerEvent> selectReadyToSend(String topic);
+  List<ListenerEvent> selectReadyToSend(@Param("topic") String topic);
 
   int updateStatusById(@Param("id") long id,@Param("status") Enum status);
 }
