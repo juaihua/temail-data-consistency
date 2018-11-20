@@ -23,9 +23,9 @@ public class HandleEventDataService {
     this.listenerEventRepo = listenerEventRepo;
   }
 
-  public Map<String, List<ListenerEvent>> findToBeSend() {
+  public Map<String, List<ListenerEvent>> findToBeSend(String topic) {
     return listenerEventRepo
-        .findReadyToSend()
+        .findReadyToSend(topic)
         .stream()
         .collect(Collectors.groupingBy(ListenerEvent::key));
   }
