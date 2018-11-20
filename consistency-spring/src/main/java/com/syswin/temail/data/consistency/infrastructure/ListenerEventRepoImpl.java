@@ -17,8 +17,8 @@ public class ListenerEventRepoImpl implements ListenerEventRepo {
   }
 
   @Override
-  public List<ListenerEvent> findReadyToSend() {
-    return eventMapper.selectReadyToSend();
+  public List<ListenerEvent> findReadyToSend(String topic) {
+    return eventMapper.selectReadyToSend(topic);
   }
 
   @Override

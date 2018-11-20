@@ -5,6 +5,9 @@
     select id, status, content, topic, tag, create_time, update_time
     from listener_event
     where status = 'NEW'
+    <if test="topic != 'all'.toString() ">
+      and topic = #{topic}
+    </if>
     limit 0,100
   </select>
   <update id="updateStatusById">
