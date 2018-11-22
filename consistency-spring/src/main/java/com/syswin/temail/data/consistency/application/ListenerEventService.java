@@ -1,6 +1,5 @@
 package com.syswin.temail.data.consistency.application;
 
-import com.syswin.temail.data.consistency.configuration.datasource.DynamicDataSourceContextHolder;
 import java.util.concurrent.Future;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -22,11 +21,9 @@ public class ListenerEventService {
   }
 
   @Async("taskExecutor")
-  public Future<String> doTask(String dbName){
-    DynamicDataSourceContextHolder.set(dbName);
-    logger.debug("doTask->"+dbName);
-    taskService.doSendingMessage(dbName);
-    DynamicDataSourceContextHolder.clearDataSourceKey();
-    return new AsyncResult<>("database: " + dbName + " ,task error");
+  public Future<String> doTask(String topic){
+    logger.debug("doTask->"+topic);
+    taskService.doSendingMessage(topic);
+    return new AsyncResult<>("topic: " + topic + " ,task error");
   }
 }

@@ -21,6 +21,7 @@ import org.springframework.util.StringUtils;
 public class RocketMQProducer implements MQProducer{
 
   private static final Logger logger = LoggerFactory.getLogger(RocketMQProducer.class);
+
   private final DefaultMQProducer producer = new DefaultMQProducer("data-consistency");
 
   private String host;

@@ -1,10 +1,13 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
 <mapper namespace="com.syswin.temail.data.consistency.infrastructure.ListenerEventMapper">
-  <select id="selectReadyToSend" resultType="ListenerEvent">
+  <select id="selectReadyToSend" parameterType="java.lang.String" resultType="ListenerEvent">
     select id, status, content, topic, tag, create_time, update_time
     from listener_event
     where status = 'NEW'
+    <if test="topic != 'all'.toString() ">
+      and topic = #{topic}
+    </if>
     limit 0,100
   </select>
   <update id="updateStatusById">

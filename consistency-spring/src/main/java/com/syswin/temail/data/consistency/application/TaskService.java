@@ -1,6 +1,5 @@
 package com.syswin.temail.data.consistency.application;
 
-import com.syswin.temail.data.consistency.configuration.datasource.DynamicDataSourceContextHolder;
 import com.syswin.temail.data.consistency.domain.ListenerEvent;
 import java.util.LinkedList;
 import java.util.List;
@@ -27,41 +26,37 @@ public class TaskService {
     this.dataService = dataService;
   }
 
-  public Map<String, List<ListenerEvent>> findToBeSend(String dbName) {
-    DynamicDataSourceContextHolder.set(dbName);
-    Map<String, List<ListenerEvent>> toBeSend = dataService.findToBeSend();
-    DynamicDataSourceContextHolder.clearDataSourceKey();
+  public Map<String, List<ListenerEvent>> findToBeSend(String topic) {
+    Map<String, List<ListenerEvent>> toBeSend = dataService.findToBeSend(topic);
     return toBeSend;
   }
 
-  public void doSendingMessage(String dbName) {
+  public void doSendingMessage(String topic) {
     while (true) {
     logger.debug("doSendingMessage");
-      Map<String, List<ListenerEvent>> sendMap = findToBeSend(dbName);
+      Map<String, List<ListenerEvent>> sendMap = findToBeSend(topic);
       if (sendMap.isEmpty()) {
         try {
-          logger.debug("dbName:{},no data,thread sleeping", dbName);
+          logger.debug("topic:{},no data,thread sleeping", topic);
           Thread.sleep(1000);
           continue;
         } catch (InterruptedException e) {
           logger.warn("error,thread is being interrupted!");
         }
       }
-      sendInLoop(dbName, sendMap);
+      sendInLoop(topic, sendMap);
     }
   }
 
-  public void sendInLoop(String dbName, Map<String, List<ListenerEvent>> sendMap) {
+  public void sendInLoop(String topic, Map<String, List<ListenerEvent>> sendMap) {
     LinkedList<Future<?>> results = new LinkedList<>();
     sendMap.forEach((k, v) -> {
       Future<?> result = taskExecutor.submit(() -> {
         v.forEach(
             x -> {
-              DynamicDataSourceContextHolder.set(dbName);
-              logger.debug("doTask-in-executer->" + dbName);
+              logger.debug("doTask-in-executer->" + topic);
               dataService.sendAndUpdate(x);
               logger.debug("RocketMQ send data=>[{}]", x);
-              DynamicDataSourceContextHolder.clearDataSourceKey();
             }
         );
       });
