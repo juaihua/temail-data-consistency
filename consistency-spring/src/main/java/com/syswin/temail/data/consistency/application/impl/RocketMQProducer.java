@@ -32,7 +32,7 @@ public class RocketMQProducer implements MQProducer{
 
   @PostConstruct
   public void start() throws MQClientException {
-    logger.info("MQ：启动生产者");
+    logger.info("MQ start");
     producer.setNamesrvAddr(host);
     producer.setInstanceName(UUID.randomUUID().toString());
     producer.start();
@@ -74,7 +74,7 @@ public class RocketMQProducer implements MQProducer{
   public void stop() {
     if (producer != null) {
       producer.shutdown();
-      logger.info("MQ：关闭生产者");
+      logger.info("MQ shutdown");
     }
   }
 }
