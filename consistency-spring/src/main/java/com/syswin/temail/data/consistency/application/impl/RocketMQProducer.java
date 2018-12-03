@@ -10,6 +10,7 @@ import org.apache.rocketmq.client.producer.DefaultMQProducer;
 import org.apache.rocketmq.client.producer.SendResult;
 import org.apache.rocketmq.client.producer.SendStatus;
 import org.apache.rocketmq.common.message.Message;
+import org.apache.rocketmq.remoting.common.RemotingHelper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
@@ -39,10 +40,10 @@ public class RocketMQProducer implements MQProducer{
   }
   @Override
   public boolean send(String topic, String tag, String content) {
-    Message mqMessage = new Message(topic, tag, (content).getBytes());
     StopWatch stop = new StopWatch();
     long count = 0;
     try {
+      Message mqMessage = new Message(topic, tag, (content).getBytes(RemotingHelper.DEFAULT_CHARSET));
       stop.start();
       SendResult result = producer.send(mqMessage, (mqs, msg, arg) -> {
         Integer id = (Integer) arg;
