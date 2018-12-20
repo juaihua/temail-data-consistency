@@ -49,9 +49,4 @@ public class HandleEventDataService {
     LocalDateTime condition = LocalDateTime.now().minusDays(Long.parseLong(timeCondition));
     listenerEventRepo.deleteByCondition(condition);
   }
-
-  public static void main(String[] args) {
-    LocalDateTime now = LocalDateTime.now();
-    System.out.println(now);
-  }
 }
