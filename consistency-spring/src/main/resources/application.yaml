@@ -10,11 +10,16 @@ app:
   consistency:
     rocketmq:
       host: 192.168.15.37:9876
-  executor:
-    core-pool-size: 20
-    keep-alive-seconds: 1000
-    max-pool-size: 30
-    queue-capacity: 30
+    executor:
+      core-pool-size: 20
+      keep-alive-seconds: 1000
+      max-pool-size: 30
+      queue-capacity: 30
+    flush:
+      data:
+        cron: 0 */1 * * * ?
+      time:
+        condition: 7   #unit:day
 
 logging:
   level:
