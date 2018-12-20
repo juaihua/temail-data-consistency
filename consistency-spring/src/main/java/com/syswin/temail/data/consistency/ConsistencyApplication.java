@@ -19,6 +19,6 @@ public class ConsistencyApplication implements CommandLineRunner{
 
   @Override
   public void run(String... args) throws Exception {
-//    eventDataMonitorJob.eventDataMonitorJob();
+    eventDataMonitorJob.eventDataMonitorJob();
   }
 }
