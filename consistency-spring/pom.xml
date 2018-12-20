@@ -57,11 +57,11 @@
       <groupId>org.springframework.boot</groupId>
       <artifactId>spring-boot-starter-log4j2</artifactId>
     </dependency>
-    <dependency>
-      <groupId>com.systoon.integration</groupId>
-      <artifactId>disconf-spring-boot-starter</artifactId>
-      <version>1.0.0</version>
-    </dependency>
+    <!--<dependency>-->
+      <!--<groupId>com.systoon.integration</groupId>-->
+      <!--<artifactId>disconf-spring-boot-starter</artifactId>-->
+      <!--<version>1.0.0</version>-->
+    <!--</dependency>-->
     <dependency>
       <groupId>org.mybatis.spring.boot</groupId>
       <artifactId>mybatis-spring-boot-starter</artifactId>
