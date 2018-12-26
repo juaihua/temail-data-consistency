@@ -24,6 +24,7 @@ public class ListenerEventService {
   public Future<String> doTask(String topic){
     logger.debug("doTask->"+topic);
     taskService.doSendingMessage(topic);
+
     return new AsyncResult<>("topic: " + topic + " ,task error");
   }
 }

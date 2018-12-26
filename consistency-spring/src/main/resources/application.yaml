@@ -15,11 +15,6 @@ app:
       keep-alive-seconds: 1000
       max-pool-size: 30
       queue-capacity: 30
-    flush:
-      data:
-        cron: 0 */1 * * * ?
-      time:
-        condition: 7   #unit:day
 
 logging:
   level:

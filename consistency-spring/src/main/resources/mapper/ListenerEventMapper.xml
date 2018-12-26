@@ -3,7 +3,12 @@
 <mapper namespace="com.syswin.temail.data.consistency.infrastructure.ListenerEventMapper">
   <delete id="delete" parameterType="java.time.LocalDateTime">
     delete from listener_event
-    where create_time &lt; #{condition}
+    where status = 'SENT'
+    limit 50
+  </delete>
+  <delete id="deleteById">
+    delete from listener_event
+    where id = #{id}
   </delete>
   <select id="selectReadyToSend" parameterType="java.lang.String" resultType="ListenerEvent">
     select id, status, content, topic, tag, create_time, update_time
@@ -12,7 +17,7 @@
     <if test="topic != 'all'.toString() ">
       and topic = #{topic}
     </if>
-    limit 0,100
+    limit 0,50
   </select>
   <update id="updateStatusById">
     update listener_event set status=#{status,jdbcType=VARCHAR}

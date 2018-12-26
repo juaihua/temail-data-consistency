@@ -11,8 +11,5 @@ public interface ListenerEventMapper {
 
   List<ListenerEvent> selectReadyToSend(@Param("topic") String topic);
 
-  int updateStatusById(@Param("id") long id,@Param("status") Enum status);
-
-  void delete(@Param("condition") LocalDateTime condition);
-
+  int deleteById(long id);
 }

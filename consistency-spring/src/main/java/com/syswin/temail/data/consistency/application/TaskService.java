@@ -5,16 +5,15 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.Future;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
 import org.springframework.stereotype.Service;
 
 @Service
+@Slf4j
 public class TaskService {
 
-  private static final Logger logger = LoggerFactory.getLogger(TaskService.class);
 
   private final ThreadPoolTaskExecutor taskExecutor;
 
@@ -32,16 +31,17 @@ public class TaskService {
   }
 
   public void doSendingMessage(String topic) {
+
     while (true) {
-    logger.debug("doSendingMessage");
+    log.debug("doSendingMessage");
       Map<String, List<ListenerEvent>> sendMap = findToBeSend(topic);
       if (sendMap.isEmpty()) {
         try {
-          logger.debug("topic:{},no data,thread sleeping", topic);
-          Thread.sleep(1000);
+          log.debug("topic:{},no data,thread sleeping", topic);
+          Thread.sleep(100);
           continue;
         } catch (InterruptedException e) {
-          logger.warn("error,thread is being interrupted!");
+          log.warn("error,thread is being interrupted!");
         }
       }
       sendInLoop(topic, sendMap);
@@ -54,9 +54,9 @@ public class TaskService {
       Future<?> result = taskExecutor.submit(() -> {
         v.forEach(
             x -> {
-              logger.debug("doTask-in-executer->" + topic);
+              log.debug("doTask-in-executer->" + topic);
               dataService.sendAndUpdate(x);
-              logger.debug("RocketMQ send data=>[{}]", x);
+              log.debug("RocketMQ send data=>[{}]", x);
             }
         );
       });
@@ -70,7 +70,7 @@ public class TaskService {
       try {
         Thread.sleep(100);
       } catch (InterruptedException e) {
-        logger.warn("error,thread is being interrupted!");
+        log.warn("error,thread is being interrupted!");
       }
       boolean flag = false;
       for (Future<?> result : results) {

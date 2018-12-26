@@ -1,32 +1,32 @@
 package com.syswin.temail.data.consistency.configuration;
-import com.syswin.temail.data.consistency.interfaces.FlushHistoryDataJob;
+
+import com.syswin.temail.data.consistency.interfaces.EventDataMonitorJob;
 import org.quartz.CronScheduleBuilder;
 import org.quartz.JobBuilder;
 import org.quartz.JobDetail;
 import org.quartz.Trigger;
 import org.quartz.TriggerBuilder;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
 @Configuration
 public class QuartzConfiguration {
 
-  @Value("${app.consistency.flush.data.cron}")
-  private String cron;
+  private static final String monitorDataCron = "* * * * * ?";
 
   @Bean
-  public JobDetail pushUnreadCountTaskDetail() {
-    return JobBuilder.newJob(FlushHistoryDataJob.class).withIdentity("flushHistoryDataJobDetail").storeDurably().build();
+  public JobDetail eventDataMonitorTaskDetail() {
+    return JobBuilder.newJob(EventDataMonitorJob.class).withIdentity("eventDataMonitorTaskDetail").storeDurably().build();
   }
 
   @Bean
-  public Trigger uploadTaskTrigger() {
-    CronScheduleBuilder scheduleBuilder = CronScheduleBuilder.cronSchedule(cron);
-    return TriggerBuilder.newTrigger().forJob(pushUnreadCountTaskDetail())
-        .withIdentity("flushHistoryDataJobTrigger")
+  public Trigger eventDataMonitorTaskTrigger() {
+    CronScheduleBuilder scheduleBuilder = CronScheduleBuilder.cronSchedule(monitorDataCron);
+    return TriggerBuilder.newTrigger().forJob(eventDataMonitorTaskDetail())
+        .withIdentity("eventDataMonitorTaskTrigger")
         .withSchedule(scheduleBuilder)
         .build();
   }
+
 
 }

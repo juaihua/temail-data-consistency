@@ -2,7 +2,6 @@ package com.syswin.temail.data.consistency.infrastructure;
 
 import com.syswin.temail.data.consistency.domain.ListenerEvent;
 import com.syswin.temail.data.consistency.domain.ListenerEventRepo;
-import java.time.LocalDateTime;
 import java.util.List;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Repository;
@@ -23,12 +22,7 @@ public class ListenerEventRepoImpl implements ListenerEventRepo {
   }
 
   @Override
-  public int updateStatus(long id, Enum status) {
-    return eventMapper.updateStatusById(id,status);
-  }
-
-  @Override
-  public void deleteByCondition(LocalDateTime condition) {
-    eventMapper.delete(condition);
+  public int delete(long id) {
+    return eventMapper.deleteById(id);
   }
 }
