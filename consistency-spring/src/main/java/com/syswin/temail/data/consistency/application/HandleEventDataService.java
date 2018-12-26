@@ -32,7 +32,6 @@ public class HandleEventDataService {
         .collect(Collectors.groupingBy(ListenerEvent::key));
   }
 
-  @Transactional
   public void sendAndUpdate(ListenerEvent event) {
     mqProducer.send(event.getTopic(), event.getTag(), event.getContent());
     listenerEventRepo.delete(event.getId());
