@@ -1,30 +1,41 @@
 package com.syswin.temail.data.consistency.application;
 
+import java.util.LinkedList;
+import java.util.List;
 import java.util.concurrent.Future;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import java.util.concurrent.TimeUnit;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.scheduling.annotation.Async;
-import org.springframework.scheduling.annotation.AsyncResult;
+import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
 import org.springframework.stereotype.Service;
 
 @Service
+@Slf4j
 public class ListenerEventService {
 
-  private static final Logger logger = LoggerFactory.getLogger(ListenerEventService.class);
 
   private final TaskService taskService;
 
+  private final ThreadPoolTaskExecutor taskExecutor;
+
   @Autowired
-  public ListenerEventService(TaskService taskService) {
+  public ListenerEventService(TaskService taskService, ThreadPoolTaskExecutor taskExecutor) {
     this.taskService = taskService;
+    this.taskExecutor = taskExecutor;
   }
 
-  @Async("taskExecutor")
-  public Future<String> doTask(String topic){
-    logger.debug("doTask->"+topic);
-    taskService.doSendingMessage(topic);
-
-    return new AsyncResult<>("topic: " + topic + " ,task error");
+  public void doTask(List<String> topics){
+    List<Future<?>> results = new LinkedList<>();
+    for (String x : topics) {
+      Future<?> future = taskExecutor.submit(() -> taskService.doSendingMessage(x));
+      results.add(future);
+    }
+    for (Future future : results) {
+      try {
+        future.get(5, TimeUnit.SECONDS);
+      } catch (Exception e) {
+        log.error("task excute error:{}",e.getStackTrace());
+      }
+    }
   }
 }

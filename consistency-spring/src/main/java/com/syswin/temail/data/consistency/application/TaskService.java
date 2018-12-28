@@ -5,6 +5,7 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.Future;
+import java.util.concurrent.TimeUnit;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
@@ -13,7 +14,6 @@ import org.springframework.stereotype.Service;
 @Service
 @Slf4j
 public class TaskService {
-
 
   private final ThreadPoolTaskExecutor taskExecutor;
 
@@ -31,19 +31,16 @@ public class TaskService {
   }
 
   public void doSendingMessage(String topic) {
-
-    while (true) {
     log.debug("doSendingMessage");
-      Map<String, List<ListenerEvent>> sendMap = findToBeSend(topic);
-      if (sendMap.isEmpty()) {
-        try {
-          log.debug("topic:{},no data,thread sleeping", topic);
-          Thread.sleep(100);
-          continue;
-        } catch (InterruptedException e) {
-          log.warn("error,thread is being interrupted!");
-        }
+    Map<String, List<ListenerEvent>> sendMap = findToBeSend(topic);
+    if (sendMap.isEmpty()) {
+      try {
+        log.debug("topic:{},no data,thread sleeping", topic);
+        Thread.sleep(100);
+      } catch (InterruptedException e) {
+        log.warn("error,thread is being interrupted!");
       }
+    }else {
       sendInLoop(topic, sendMap);
     }
   }
@@ -62,25 +59,11 @@ public class TaskService {
       });
       results.add(result);
     });
-    checkTask(results);
-  }
-
-  private void checkTask(LinkedList<Future<?>> results) {
-    while (true) {
+    for (Future future : results) {
       try {
-        Thread.sleep(100);
-      } catch (InterruptedException e) {
-        log.warn("error,thread is being interrupted!");
-      }
-      boolean flag = false;
-      for (Future<?> result : results) {
-        if (!result.isDone()) {
-          continue;
-        }
-        flag = result.isDone();
-      }
-      if (flag) {
-        break;
+        future.get(500, TimeUnit.MILLISECONDS);
+      } catch (Exception e) {
+        log.error("task excute error:{}",e.getStackTrace());
       }
     }
   }
