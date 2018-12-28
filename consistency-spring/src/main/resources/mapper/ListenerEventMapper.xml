@@ -17,7 +17,7 @@
     <if test="topic != 'all'.toString() ">
       and topic = #{topic}
     </if>
-    limit 0,50
+    limit 0,200
   </select>
   <update id="updateStatusById">
     update listener_event set status=#{status,jdbcType=VARCHAR}
