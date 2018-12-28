@@ -27,7 +27,6 @@ public class EventDataMonitorJob extends QuartzJobBean {
   @Override
   protected void executeInternal(JobExecutionContext jobExecutionContext) throws JobExecutionException {
     List<String> topics = CollectionUtils.arrayToList(topicArray);
-    log.info("topics:{} task started", topics);
     listenerEventService.doTask(topics);
   }
 }
