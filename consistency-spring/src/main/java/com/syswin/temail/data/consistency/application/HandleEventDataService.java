@@ -2,13 +2,13 @@ package com.syswin.temail.data.consistency.application;
 
 import com.syswin.temail.data.consistency.domain.ListenerEvent;
 import com.syswin.temail.data.consistency.domain.ListenerEventRepo;
+import com.syswin.temail.data.consistency.domain.SendingMQMessageException;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 
 @Service
 @Slf4j
@@ -33,7 +33,12 @@ public class HandleEventDataService {
   }
 
   public void sendAndUpdate(ListenerEvent event) {
-    mqProducer.send(event.getTopic(), event.getTag(), event.getContent());
+    try {
+      mqProducer.send(event.getContent(),event.getTopic(),event.getTag(),"");
+    } catch (Exception e) {
+      log.error("send message to MQ error!");
+      throw new SendingMQMessageException(e);
+    }
     listenerEventRepo.delete(event.getId());
   }
 }

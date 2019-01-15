@@ -2,26 +2,25 @@ package com.syswin.temail.data.consistency.application.impl;
 
 import com.syswin.temail.data.consistency.application.MQProducer;
 import com.syswin.temail.data.consistency.domain.SendingMQMessageException;
+import java.io.UnsupportedEncodingException;
 import java.util.UUID;
 import javax.annotation.PostConstruct;
 import javax.annotation.PreDestroy;
+import lombok.extern.slf4j.Slf4j;
+import org.apache.rocketmq.client.exception.MQBrokerException;
 import org.apache.rocketmq.client.exception.MQClientException;
 import org.apache.rocketmq.client.producer.DefaultMQProducer;
 import org.apache.rocketmq.client.producer.SendResult;
 import org.apache.rocketmq.client.producer.SendStatus;
 import org.apache.rocketmq.common.message.Message;
 import org.apache.rocketmq.remoting.common.RemotingHelper;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import org.apache.rocketmq.remoting.exception.RemotingException;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
-import org.springframework.util.StopWatch;
-import org.springframework.util.StringUtils;
 
 @Service
+@Slf4j
 public class RocketMQProducer implements MQProducer{
-
-  private static final Logger logger = LoggerFactory.getLogger(RocketMQProducer.class);
 
   private final DefaultMQProducer producer = new DefaultMQProducer("data-consistency");
 
@@ -33,49 +32,27 @@ public class RocketMQProducer implements MQProducer{
 
   @PostConstruct
   public void start() throws MQClientException {
-    logger.info("MQ start");
+    log.info("MQ producer start");
     producer.setNamesrvAddr(host);
     producer.setInstanceName(UUID.randomUUID().toString());
     producer.start();
   }
+
   @Override
-  public boolean send(String topic, String tag, String content) {
-    StopWatch stop = new StopWatch();
-    long count = 0;
-    try {
-      Message mqMessage = new Message(topic, tag, (content).getBytes(RemotingHelper.DEFAULT_CHARSET));
-      stop.start();
-      SendResult result = producer.send(mqMessage, (mqs, msg, arg) -> {
-        Integer id = (Integer) arg;
-        int index = id % mqs.size();
-        return mqs.get(index);
-      }, 1);
-      if (result.getSendStatus().equals(SendStatus.SEND_OK)) {
-        return true;
-      } else {
-        if(!StringUtils.isEmpty(content)){
-          count = content.length();
-        }
-        logger.error("result status:[{}]",result.getSendStatus());
-        logger.error("mq send message FAILURE,topic=[{}],content's length=[{}]", topic, count);
-        throw new SendingMQMessageException("mq send message FAILURE");
-      }
-    } catch (Exception e) {
-      if(!StringUtils.isEmpty(content)){
-        count = content.length();
-      }
-      logger.error("mq send message error=[{}],topic=[{}],content's length=[{}]", e, topic, count);
-      throw new SendingMQMessageException(e);
-    } finally {
-      stop.stop();
+  public void send(String body, String topic, String tags, String keys)
+      throws UnsupportedEncodingException, InterruptedException, RemotingException, MQClientException, MQBrokerException {
+    Message mqMsg = new Message(topic, tags, keys, body.getBytes(RemotingHelper.DEFAULT_CHARSET));
+    log.info("MQ: send message: {}", body);
+    SendResult sendResult = producer.send(mqMsg);
+    log.info("MQ: send result: {}", sendResult);
+    if (sendResult.getSendStatus() != SendStatus.SEND_OK) {
+      throw new SendingMQMessageException(sendResult.toString());
     }
   }
 
   @PreDestroy
   public void stop() {
-    if (producer != null) {
-      producer.shutdown();
-      logger.info("MQ shutdown");
-    }
+    producer.shutdown();
+    log.info("MQ producer shutdown");
   }
 }

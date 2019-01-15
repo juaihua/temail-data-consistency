@@ -1,10 +1,7 @@
 package com.syswin.temail.data.consistency.interfaces;
 
 import com.syswin.temail.data.consistency.application.ListenerEventService;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
-import java.util.concurrent.Future;
 import lombok.extern.slf4j.Slf4j;
 import org.quartz.DisallowConcurrentExecution;
 import org.quartz.JobExecutionContext;
