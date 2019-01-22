@@ -72,7 +72,7 @@ public class ApplicationIntegrationTest {
         mysql.getMappedPort(3306),
         "root",
         "password",
-        new MqEventSender(mqProducer));
+        new MqEventSender(mqProducer, 1000L));
   }
 
   @After

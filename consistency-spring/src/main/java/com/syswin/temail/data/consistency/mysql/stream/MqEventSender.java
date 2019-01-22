@@ -13,9 +13,11 @@ import org.apache.rocketmq.remoting.exception.RemotingException;
 public class MqEventSender implements EventHandler {
 
   private final MQProducer mqProducer;
+  private final long retryIntervalMillis;
 
-  public MqEventSender(MQProducer mqProducer) {
+  public MqEventSender(MQProducer mqProducer, long retryIntervalMillis) {
     this.mqProducer = mqProducer;
+    this.retryIntervalMillis = retryIntervalMillis;
   }
 
   // TODO: 2019/1/22 batch sending?
@@ -31,19 +33,22 @@ public class MqEventSender implements EventHandler {
       try {
         mqProducer.send(listenerEvent.getContent(), listenerEvent.getTopic(), listenerEvent.getTag(), listenerEvent.key());
         return;
-      } catch (UnsupportedEncodingException | RemotingException | MQClientException | MQBrokerException e) {
+      } catch (RemotingException | MQClientException | MQBrokerException e) {
         log.error("Failed to send listener event by MQ and will retry: {}", listenerEvent, e);
         sleep();
       } catch (InterruptedException e) {
         log.warn("Failed to send listener event by MQ due to interruption: {}", listenerEvent, e);
         Thread.currentThread().interrupt();
+      } catch (UnsupportedEncodingException e) {
+        log.error("Failed to send listener event by MQ due to unsupported encoding: {}", listenerEvent, e);
+        return;
       }
     }
   }
 
   private void sleep() {
     try {
-      Thread.sleep(1000L);
+      Thread.sleep(retryIntervalMillis);
     } catch (InterruptedException e) {
       log.warn("Failed to retry sending listener event due to interruption", e);
       Thread.currentThread().interrupt();
