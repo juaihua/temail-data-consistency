@@ -4,6 +4,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.awaitility.Awaitility.waitAtMost;
 
 import com.syswin.temail.data.consistency.application.MQProducer;
+import com.syswin.temail.data.consistency.mysql.stream.BinlogSyncRecorder;
 import com.syswin.temail.data.consistency.mysql.stream.MqEventSender;
 import com.syswin.temail.data.consistency.mysql.stream.MysqlBinLogStream;
 import java.io.IOException;
@@ -48,6 +49,8 @@ public class ApplicationIntegrationTest {
   private final List<String> sentMessages = new ArrayList<>();
   private final MQProducer mqProducer = (body, topic, tags, keys) -> sentMessages.add(body + "," + topic + "," + tags);
 
+  private final List<String> binlogPositions = new ArrayList<>();
+  private final BinlogSyncRecorder binlogSyncRecorder = (filename, position) -> binlogPositions.add(filename + ":" + position);
 
   @Autowired
   private DataSource dataSource;
@@ -72,6 +75,7 @@ public class ApplicationIntegrationTest {
         mysql.getMappedPort(3306),
         "root",
         "password",
+        binlogSyncRecorder,
         new MqEventSender(mqProducer, 1000L));
   }
 
@@ -94,5 +98,7 @@ public class ApplicationIntegrationTest {
         "test4,john,bob",
         "test5,lucy,john"
     );
+
+    assertThat(binlogPositions).hasSize(5);
   }
 }

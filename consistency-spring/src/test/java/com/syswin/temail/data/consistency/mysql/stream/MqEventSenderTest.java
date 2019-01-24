@@ -1,5 +1,6 @@
 package com.syswin.temail.data.consistency.mysql.stream;
 
+import static com.seanyinx.github.unit.scaffolding.AssertUtils.expectFailing;
 import static com.syswin.temail.data.consistency.domain.SendingStatus.NEW;
 import static java.util.Arrays.asList;
 import static java.util.concurrent.TimeUnit.SECONDS;
@@ -12,6 +13,7 @@ import static org.mockito.Mockito.verify;
 
 import com.syswin.temail.data.consistency.application.MQProducer;
 import com.syswin.temail.data.consistency.domain.ListenerEvent;
+import com.syswin.temail.data.consistency.domain.SendingMQMessageException;
 import java.io.UnsupportedEncodingException;
 import java.util.ArrayList;
 import java.util.List;
@@ -34,12 +36,11 @@ public class MqEventSenderTest {
   private final MqEventSender sender = new MqEventSender(compositeMqProducer, 100L);
   private final ListenerEvent listenerEvent1 = new ListenerEvent(NEW, "foo", "private", "aaa");
   private final ListenerEvent listenerEvent2 = new ListenerEvent(NEW, "bar", "private", "bbb");
+  private final List<ListenerEvent> listenerEvents = asList(listenerEvent1, listenerEvent2);
 
   @Test
   public void sendEvent() throws Exception {
-    sender.handle(asList(
-        listenerEvent1,
-        listenerEvent2));
+    sender.handle(listenerEvents);
 
     assertThat(sentMessages).containsExactly(
         "foo,private,aaa",
@@ -58,9 +59,7 @@ public class MqEventSenderTest {
         .when(mqProducer)
         .send(anyString(), anyString(), anyString(), anyString());
 
-    sender.handle(asList(
-        new ListenerEvent(NEW, "foo", "private", "aaa"),
-        new ListenerEvent(NEW, "bar", "private", "bbb")));
+    sender.handle(listenerEvents);
 
     assertThat(sentMessages).containsExactly(
         "foo,private,aaa",
@@ -76,10 +75,11 @@ public class MqEventSenderTest {
 
     AtomicBoolean interrupted = new AtomicBoolean(false);
     Thread thread = new Thread(() -> {
-      sender.handle(asList(
-          new ListenerEvent(NEW, "foo", "private", "aaa"),
-          new ListenerEvent(NEW, "bar", "private", "bbb")));
-      interrupted.set(true);
+      try {
+        sender.handle(listenerEvents);
+      } catch (SendingMQMessageException e) {
+        interrupted.set(true);
+      }
     });
 
     thread.start();
@@ -96,9 +96,7 @@ public class MqEventSenderTest {
         .when(mqProducer)
         .send(anyString(), anyString(), anyString(), anyString());
 
-    sender.handle(asList(
-        new ListenerEvent(NEW, "foo", "private", "aaa"),
-        new ListenerEvent(NEW, "bar", "private", "bbb")));
+    sender.handle(listenerEvents);
 
     assertThat(sentMessages).isEmpty();
   }
@@ -109,9 +107,11 @@ public class MqEventSenderTest {
         .when(mqProducer)
         .send(anyString(), anyString(), anyString(), anyString());
 
-    sender.handle(asList(
-        new ListenerEvent(NEW, "foo", "private", "aaa"),
-        new ListenerEvent(NEW, "bar", "private", "bbb")));
+    try {
+      sender.handle(listenerEvents);
+      expectFailing(SendingMQMessageException.class);
+    } catch (SendingMQMessageException ignored) {
+    }
 
     assertThat(sentMessages).isEmpty();
 

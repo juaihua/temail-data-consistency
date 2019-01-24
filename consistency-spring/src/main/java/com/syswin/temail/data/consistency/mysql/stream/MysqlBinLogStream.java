@@ -34,11 +34,19 @@ public class MysqlBinLogStream {
   private final BinaryLogClient client;
   private final String hostname;
   private final int port;
+  private final BinlogSyncRecorder binlogSyncRecorder;
   private final EventHandler eventHandler;
 
-  public MysqlBinLogStream(String hostname, int port, String username, String password, EventHandler eventHandler) {
+  public MysqlBinLogStream(String hostname,
+      int port,
+      String username,
+      String password,
+      BinlogSyncRecorder binlogSyncRecorder,
+      EventHandler eventHandler) {
+
     this.hostname = hostname;
     this.port = port;
+    this.binlogSyncRecorder = binlogSyncRecorder;
     this.client = new BinaryLogClient(hostname, port, username, password);
     this.eventHandler = eventHandler;
   }
@@ -80,8 +88,10 @@ public class MysqlBinLogStream {
                 .map(this::toListenerEvent)
                 .collect(Collectors.toList());
 
-            // TODO: 2019/1/22 persist binlog position once handled
+            // listener events are sent in single element collections,
+            // so it's safe to record binlog position once the collection of events is handled
             eventHandler.handle(listenerEvents);
+            binlogSyncRecorder.record(client.getBinlogFilename(), client.getBinlogPosition());
           }
 
           eventData[0] = null;

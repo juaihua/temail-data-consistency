@@ -2,6 +2,7 @@ package com.syswin.temail.data.consistency.mysql.stream;
 
 import com.syswin.temail.data.consistency.application.MQProducer;
 import com.syswin.temail.data.consistency.domain.ListenerEvent;
+import com.syswin.temail.data.consistency.domain.SendingMQMessageException;
 import java.io.UnsupportedEncodingException;
 import java.util.List;
 import lombok.extern.slf4j.Slf4j;
@@ -20,7 +21,6 @@ public class MqEventSender implements EventHandler {
     this.retryIntervalMillis = retryIntervalMillis;
   }
 
-  // TODO: 2019/1/22 batch sending?
   @Override
   public void handle(List<ListenerEvent> listenerEvents) {
     for (int i = 0; i < listenerEvents.size() && !Thread.currentThread().isInterrupted(); i++) {
@@ -35,10 +35,9 @@ public class MqEventSender implements EventHandler {
         return;
       } catch (RemotingException | MQClientException | MQBrokerException e) {
         log.error("Failed to send listener event by MQ and will retry: {}", listenerEvent, e);
-        sleep();
+        sleep(listenerEvent);
       } catch (InterruptedException e) {
-        log.warn("Failed to send listener event by MQ due to interruption: {}", listenerEvent, e);
-        Thread.currentThread().interrupt();
+        onInterruption(listenerEvent, e);
       } catch (UnsupportedEncodingException e) {
         log.error("Failed to send listener event by MQ due to unsupported encoding: {}", listenerEvent, e);
         return;
@@ -46,12 +45,17 @@ public class MqEventSender implements EventHandler {
     }
   }
 
-  private void sleep() {
+  private void sleep(ListenerEvent listenerEvent) {
     try {
       Thread.sleep(retryIntervalMillis);
     } catch (InterruptedException e) {
-      log.warn("Failed to retry sending listener event due to interruption", e);
-      Thread.currentThread().interrupt();
+      onInterruption(listenerEvent, e);
     }
+  }
+
+  private void onInterruption(ListenerEvent listenerEvent, InterruptedException e) {
+    log.warn("Failed to send listener event by MQ due to interruption: {}", listenerEvent, e);
+    Thread.currentThread().interrupt();
+    throw new SendingMQMessageException("Failed to send listener event by MQ due to interruption", e);
   }
 }
