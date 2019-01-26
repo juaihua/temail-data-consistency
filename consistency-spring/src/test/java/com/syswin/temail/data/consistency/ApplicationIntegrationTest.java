@@ -4,6 +4,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.awaitility.Awaitility.waitAtMost;
 
 import com.syswin.temail.data.consistency.application.MQProducer;
+import com.syswin.temail.data.consistency.containers.MysqlContainer;
 import com.syswin.temail.data.consistency.mysql.stream.BinlogSyncRecorder;
 import com.syswin.temail.data.consistency.mysql.stream.MqEventSender;
 import com.syswin.temail.data.consistency.mysql.stream.MysqlBinLogStream;
@@ -81,7 +82,7 @@ public class ApplicationIntegrationTest {
 
   @After
   public void tearDown() {
-    mysqlBinLogStream.shutdown();
+    mysqlBinLogStream.stop();
   }
 
   @Test

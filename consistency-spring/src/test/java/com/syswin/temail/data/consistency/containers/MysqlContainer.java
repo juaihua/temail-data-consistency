@@ -1,11 +1,11 @@
-package com.syswin.temail.data.consistency;
+package com.syswin.temail.data.consistency.containers;
 
 import static org.testcontainers.containers.BindMode.READ_ONLY;
 
 import org.testcontainers.containers.GenericContainer;
 
 public class MysqlContainer extends GenericContainer<MysqlContainer> {
-  MysqlContainer() {
+  public MysqlContainer() {
     super("mysql:5.7");
   }
 

@@ -51,6 +51,7 @@ public class MysqlBinLogStream {
     this.eventHandler = eventHandler;
   }
 
+  // TODO: 2019/1/26 GTID replication? master fail over?
   public void start(String... tableNames) throws IOException, TimeoutException {
     Set<String> tableNameSet = new HashSet<>();
     Collections.addAll(tableNameSet, tableNames);
@@ -61,8 +62,7 @@ public class MysqlBinLogStream {
     client.connect(DATABASE_CONNECT_TIMEOUT);
   }
 
-
-  public void shutdown() {
+  public void stop() {
     try {
       client.disconnect();
     } catch (IOException e) {
