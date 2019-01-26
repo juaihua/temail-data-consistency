@@ -17,7 +17,6 @@ update `test_table` set status = 'SENT' where `topic` = 'jack' and `tag` = 'alic
 
 insert into `listener_event` ( `status`, `content`, `topic`, `tag`) values ('NEW', 'test3', 'bob', 'jack');
 insert into `listener_event` ( `status`, `content`, `topic`, `tag`) values ('NEW', 'test4', 'john', 'bob');
-insert into `listener_event` ( `status`, `content`, `topic`, `tag`) values ('NEW', 'test5', 'lucy', 'john');
 
 select * from `test_table` where `topic` = 'jack' and `tag` = 'alice';
 delete from `test_table` where `topic` = 'jack' and `tag` = 'alice';
@@ -25,3 +24,8 @@ delete from `test_table` where `topic` = 'jack' and `tag` = 'alice';
 update `listener_event` set status = 'SENT' where `topic` = 'jack' and `tag` = 'alice';
 select * from `listener_event` where `topic` = 'jack' and `tag` = 'alice';
 delete from `listener_event` where `topic` = 'jack' and `tag` = 'alice';
+
+START TRANSACTION;
+update `listener_event` set status = 'SENT' where `topic` = 'jack' and `tag` = 'alice';
+insert into `listener_event` ( `status`, `content`, `topic`, `tag`) values ('NEW', 'test5', 'lucy', 'john');
+COMMIT;

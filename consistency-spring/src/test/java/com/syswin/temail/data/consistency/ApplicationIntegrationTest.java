@@ -49,9 +49,9 @@ public class ApplicationIntegrationTest {
 
   private final List<String> sentMessages = new ArrayList<>();
   private final MQProducer mqProducer = (body, topic, tags, keys) -> sentMessages.add(body + "," + topic + "," + tags);
+  private final MqEventSender eventHandler = new MqEventSender(mqProducer, 1000L);
 
-  private final List<String> binlogPositions = new ArrayList<>();
-  private final BinlogSyncRecorder binlogSyncRecorder = (filename, position) -> binlogPositions.add(filename + ":" + position);
+  private final MockBinlogSyncRecorder binlogSyncRecorder = new MockBinlogSyncRecorder();
 
   @Autowired
   private DataSource dataSource;
@@ -76,8 +76,8 @@ public class ApplicationIntegrationTest {
         mysql.getMappedPort(3306),
         "root",
         "password",
-        binlogSyncRecorder,
-        new MqEventSender(mqProducer, 1000L));
+        binlogSyncRecorder
+    );
   }
 
   @After
@@ -86,8 +86,8 @@ public class ApplicationIntegrationTest {
   }
 
   @Test
-  public void streamEventsToMq() throws IOException, TimeoutException {
-    mysqlBinLogStream.start("listener_event");
+  public void streamEventsToMq() throws IOException, TimeoutException, InterruptedException {
+    mysqlBinLogStream.start(eventHandler, "listener_event");
 
     DatabasePopulatorUtils.execute(databasePopulator, dataSource);
 
@@ -100,6 +100,59 @@ public class ApplicationIntegrationTest {
         "test5,lucy,john"
     );
 
-    assertThat(binlogPositions).hasSize(5);
+    mysqlBinLogStream.stop();
+    DatabasePopulatorUtils.execute(databasePopulator, dataSource);
+    mysqlBinLogStream.start(eventHandler, "listener_event");
+
+    // resume for last known position
+    waitAtMost(Duration.ONE_SECOND).until(() -> sentMessages.size() == 10);
+    assertThat(sentMessages).containsExactly(
+        "test1,bob,alice",
+        "test2,jack,alice",
+        "test3,bob,jack",
+        "test4,john,bob",
+        "test5,lucy,john",
+        "test1,bob,alice",
+        "test2,jack,alice",
+        "test3,bob,jack",
+        "test4,john,bob",
+        "test5,lucy,john"
+    );
+
+    mysqlBinLogStream.stop();
+    DatabasePopulatorUtils.execute(databasePopulator, dataSource);
+    binlogSyncRecorder.reset();
+    mysqlBinLogStream.start(eventHandler, "listener_event");
+    Thread.sleep(1000);
+
+    // start from latest binlog, so no new event processed
+    assertThat(sentMessages).hasSize(10);
+  }
+
+  private static class MockBinlogSyncRecorder implements BinlogSyncRecorder {
+
+    private String binlogFilename;
+    private long binLogPosition;
+
+    @Override
+    public void record(String filename, long position) {
+      binlogFilename = filename;
+      binLogPosition = position;
+    }
+
+    @Override
+    public String filename() {
+      return binlogFilename;
+    }
+
+    @Override
+    public long position() {
+      return binLogPosition;
+    }
+
+    void reset() {
+      binlogFilename = null;
+      binLogPosition = 0;
+    }
   }
 }

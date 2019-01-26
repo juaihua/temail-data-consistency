@@ -35,29 +35,27 @@ public class MysqlBinLogStream {
   private final String hostname;
   private final int port;
   private final BinlogSyncRecorder binlogSyncRecorder;
-  private final EventHandler eventHandler;
 
   public MysqlBinLogStream(String hostname,
       int port,
       String username,
       String password,
-      BinlogSyncRecorder binlogSyncRecorder,
-      EventHandler eventHandler) {
+      BinlogSyncRecorder binlogSyncRecorder) {
 
     this.hostname = hostname;
     this.port = port;
     this.binlogSyncRecorder = binlogSyncRecorder;
     this.client = new BinaryLogClient(hostname, port, username, password);
-    this.eventHandler = eventHandler;
   }
 
-  // TODO: 2019/1/26 GTID replication? master fail over?
-  public void start(String... tableNames) throws IOException, TimeoutException {
+  public void start(EventHandler eventHandler, String... tableNames) throws IOException, TimeoutException {
     Set<String> tableNameSet = new HashSet<>();
     Collections.addAll(tableNameSet, tableNames);
 
+    client.setBinlogFilename(binlogSyncRecorder.filename());
+    client.setBinlogPosition(binlogSyncRecorder.position());
     client.setEventDeserializer(createEventDeserializerOf(TABLE_MAP, EXT_WRITE_ROWS));
-    client.registerEventListener(replicationEventListener(tableNameSet));
+    client.registerEventListener(replicationEventListener(eventHandler, tableNameSet));
 
     client.connect(DATABASE_CONNECT_TIMEOUT);
   }
@@ -65,12 +63,13 @@ public class MysqlBinLogStream {
   public void stop() {
     try {
       client.disconnect();
+      client.getEventListeners().forEach(client::unregisterEventListener);
     } catch (IOException e) {
       log.warn("Failed to disconnect from MySql at {}:{}", hostname, port, e);
     }
   }
 
-  private BinaryLogClient.EventListener replicationEventListener(Set<String> tableNames) {
+  private BinaryLogClient.EventListener replicationEventListener(EventHandler eventHandler, Set<String> tableNames) {
     TableMapEventData[] eventData = new TableMapEventData[1];
     return event -> {
       if (event.getData() != null) {
@@ -91,12 +90,12 @@ public class MysqlBinLogStream {
             // listener events are sent in single element collections,
             // so it's safe to record binlog position once the collection of events is handled
             eventHandler.handle(listenerEvents);
-            binlogSyncRecorder.record(client.getBinlogFilename(), client.getBinlogPosition());
           }
 
           eventData[0] = null;
         }
       }
+      binlogSyncRecorder.record(client.getBinlogFilename(), client.getBinlogPosition());
     };
   }
 
