@@ -6,6 +6,9 @@ import java.util.Queue;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.atomic.AtomicBoolean;
+import org.apache.curator.framework.CuratorFramework;
+import org.apache.curator.framework.CuratorFrameworkFactory;
+import org.apache.curator.retry.ExponentialBackoffRetry;
 import org.apache.curator.test.TestingServer;
 import org.junit.After;
 import org.junit.AfterClass;
@@ -16,6 +19,7 @@ import org.junit.Test;
 public class ZkBasedStatefulTaskRunnerTest {
 
   private static TestingServer zookeeper;
+  private static CuratorFramework curator;
 
   private int counter = 0;
   private final Queue<Integer> values = new ConcurrentLinkedQueue<>();
@@ -48,17 +52,22 @@ public class ZkBasedStatefulTaskRunnerTest {
   @BeforeClass
   public static void beforeClass() throws Exception {
     zookeeper = new TestingServer(2181, true);
+
+    curator = CuratorFrameworkFactory.newClient(zookeeper.getConnectString(), new ExponentialBackoffRetry(1000, Integer.MAX_VALUE));
+    curator.start();
+    curator.blockUntilConnected();
   }
 
   @AfterClass
   public static void afterClass() throws Exception {
+    curator.close();
     zookeeper.close();
   }
 
   @Before
   public void setUp() throws Exception {
-    taskRunner1 = new ZkBasedStatefulTaskRunner(zookeeper.getConnectString(), UUID.randomUUID().toString(), task);
-    taskRunner2 = new ZkBasedStatefulTaskRunner(zookeeper.getConnectString(), UUID.randomUUID().toString(), task);
+    taskRunner1 = new ZkBasedStatefulTaskRunner(UUID.randomUUID().toString(), task, curator);
+    taskRunner2 = new ZkBasedStatefulTaskRunner(UUID.randomUUID().toString(), task, curator);
 
     taskRunner1.start();
     taskRunner2.start();

@@ -9,9 +9,7 @@ import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.ThreadPoolExecutor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.curator.framework.CuratorFramework;
-import org.apache.curator.framework.CuratorFrameworkFactory;
 import org.apache.curator.framework.recipes.leader.LeaderLatch;
-import org.apache.curator.retry.ExponentialBackoffRetry;
 
 @Slf4j
 class ZkBasedStatefulTaskRunner {
@@ -23,16 +21,14 @@ class ZkBasedStatefulTaskRunner {
 
   private final StatefulTask task;
 
-  ZkBasedStatefulTaskRunner(String zookeeperAddress, String participantId, StatefulTask task) {
+  ZkBasedStatefulTaskRunner(String participantId, StatefulTask task, CuratorFramework curator) {
     this.task = task;
 
-    curator = CuratorFrameworkFactory.newClient(zookeeperAddress, new ExponentialBackoffRetry(1000, Integer.MAX_VALUE));
-    leaderLatch = new LeaderLatch(curator, LEADER_LATCH_PATH, participantId);
+    this.curator = curator;
+    leaderLatch = new LeaderLatch(this.curator, LEADER_LATCH_PATH, participantId);
   }
 
   void start() throws Exception {
-    curator.start();
-    curator.blockUntilConnected();
     curator.create().orSetData().creatingParentsIfNeeded().forPath(LEADER_LATCH_PATH);
 
     leaderLatch.start();
@@ -77,8 +73,6 @@ class ZkBasedStatefulTaskRunner {
     } catch (IOException e) {
       log.warn("Failed to close leader latch of participant {}", leaderLatch.getId(), e);
     }
-
-    curator.close();
   }
 
   long taskCount() {
