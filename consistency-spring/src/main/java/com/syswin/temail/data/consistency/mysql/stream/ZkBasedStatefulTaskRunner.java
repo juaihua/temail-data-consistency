@@ -16,7 +16,7 @@ import org.apache.curator.retry.ExponentialBackoffRetry;
 @Slf4j
 class ZkBasedStatefulTaskRunner {
 
-  private static final String LEADER_LATCH_PATH = "/syswin/temail/binlog_stream_leader";
+  private static final String LEADER_LATCH_PATH = "/syswin/temail/binlog_stream/leader";
   private final CuratorFramework curator;
   private final LeaderLatch leaderLatch;
   private final ThreadPoolExecutor executor = singleTaskExecutor();

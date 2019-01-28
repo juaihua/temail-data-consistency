@@ -2,37 +2,23 @@ package com.syswin.temail.data.consistency.mysql.stream;
 
 import lombok.extern.slf4j.Slf4j;
 import org.apache.curator.framework.CuratorFramework;
-import org.apache.curator.framework.CuratorFrameworkFactory;
-import org.apache.curator.retry.ExponentialBackoffRetry;
 
 @Slf4j
-public class ZkBinlogSyncRecorder implements BinlogSyncRecorder {
+public abstract class ZkBinlogSyncRecorder implements BinlogSyncRecorder {
 
   static final String BINLOG_POSITION_PATH = "/syswin/temail/binlog_stream/position";
   static final String SEPARATOR = ",";
-
   private final CuratorFramework curator;
-  private volatile String binlogFilePosition;
-  private volatile String filename;
-  private volatile long position;
 
-  ZkBinlogSyncRecorder(String zookeeperAddress) throws InterruptedException {
-    curator = CuratorFrameworkFactory.newClient(zookeeperAddress, new ExponentialBackoffRetry(1000, Integer.MAX_VALUE));
-    curator.start();
-    curator.blockUntilConnected();
+  ZkBinlogSyncRecorder(CuratorFramework curator) {
+    this.curator = curator;
   }
 
-  // TODO: 2019/1/26 update to zk asynchronously
-  @Override
-  public void record(String filename, long position) {
+  void updatePositionToZk(String filename, long position) {
     try {
-      this.filename = filename;
-      this.position = position;
-      this.binlogFilePosition = filename + SEPARATOR + position;
-
       curator.create().orSetData()
           .creatingParentsIfNeeded()
-          .forPath(BINLOG_POSITION_PATH, binlogFilePosition.getBytes());
+          .forPath(BINLOG_POSITION_PATH, (filename + SEPARATOR + position).getBytes());
     } catch (Exception e) {
       log.error("Failed to record binlog position {} {} to zookeeper {}",
           filename,
@@ -43,15 +29,31 @@ public class ZkBinlogSyncRecorder implements BinlogSyncRecorder {
 
   @Override
   public String filename() {
-    return filename;
+    try {
+      return binlogPositionString().split(SEPARATOR)[0];
+    } catch (Exception e) {
+      log.error("Failed to retrieve binlog position on zookeeper with path {}", BINLOG_POSITION_PATH, e);
+      throw new IllegalStateException(e);
+    }
   }
 
   @Override
   public long position() {
-    return position;
+    try {
+      return Long.parseLong(binlogPositionString().split(SEPARATOR)[1]);
+    } catch (Exception e) {
+      log.error("Failed to retrieve binlog position on zookeeper with path {}", BINLOG_POSITION_PATH, e);
+      throw new IllegalStateException(e);
+    }
+  }
+
+  void start() {
   }
 
   void shutdown() {
-    curator.close();
+  }
+
+  private String binlogPositionString() throws Exception {
+    return new String(curator.getData().forPath(BINLOG_POSITION_PATH));
   }
 }
