@@ -6,6 +6,7 @@ import static org.awaitility.Awaitility.waitAtMost;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.doAnswer;
 
+import com.syswin.temail.data.consistency.StatefulTaskConfig.StoppableStatefulTask;
 import com.syswin.temail.data.consistency.application.MQProducer;
 import com.syswin.temail.data.consistency.containers.MysqlContainer;
 import com.syswin.temail.data.consistency.containers.ZookeeperContainer;
@@ -23,6 +24,7 @@ import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.ClassRule;
 import org.junit.Test;
+import org.junit.rules.RuleChain;
 import org.junit.runner.RunWith;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -35,24 +37,26 @@ import org.springframework.test.context.junit4.SpringRunner;
 import org.testcontainers.containers.Network;
 
 @RunWith(SpringRunner.class)
-@SpringBootTest(classes = TestApplication.class)
+@SpringBootTest(classes = {TestApplication.class, StatefulTaskConfig.class})
 @ActiveProfiles("dev")
 public class ApplicationIntegrationTest {
 
   private static final Network NETWORK = Network.newNetwork();
 
-  @ClassRule
-  public static final MysqlContainer mysql = new MysqlContainer().withNetwork(NETWORK)
+  private static final MysqlContainer mysql = new MysqlContainer().withNetwork(NETWORK)
       .withNetworkAliases("mysql-temail")
       .withEnv("MYSQL_DATABASE", "consistency")
       .withEnv("MYSQL_USER", "syswin")
       .withEnv("MYSQL_PASSWORD", "password")
       .withEnv("MYSQL_ROOT_PASSWORD", "password");
 
-  @ClassRule
-  public static final ZookeeperContainer zookeeper = new ZookeeperContainer()
+  private static final ZookeeperContainer zookeeper = new ZookeeperContainer()
       .withNetwork(NETWORK)
       .withNetworkAliases("zookeeper-temail");
+
+  @ClassRule
+  public static final RuleChain RULES = RuleChain.outerRule(mysql)
+      .around(zookeeper);
 
   private final ResourceDatabasePopulator databasePopulator = new ResourceDatabasePopulator();
 
@@ -71,6 +75,9 @@ public class ApplicationIntegrationTest {
 
   @Autowired
   private CuratorFramework curator;
+
+  @Autowired
+  private StoppableStatefulTask statefulTask;
 
   @BeforeClass
   public static void beforeClass() {
@@ -117,10 +124,9 @@ public class ApplicationIntegrationTest {
         "test5,lucy,john"
     );
 
-    // TODO: 2019/1/28 simulate network interruption
+    // simulate network interruption
     mysqlBinLogStream.stop();
     DatabasePopulatorUtils.execute(databasePopulator, dataSource);
-    executor.execute(() -> mysqlBinLogStream.start(ex -> {}));
 
     // resume for last known position
     waitAtMost(Duration.ONE_SECOND).untilAsserted(() -> assertThat(sentMessages).hasSize(10));
@@ -137,12 +143,13 @@ public class ApplicationIntegrationTest {
         "test5,lucy,john"
     );
 
+    statefulTask.pause();
     mysqlBinLogStream.stop();
     DatabasePopulatorUtils.execute(databasePopulator, dataSource);
 
     // reset binlog position
     curator.delete().forPath(BINLOG_POSITION_PATH);
-    executor.execute(() -> mysqlBinLogStream.start(ex -> {}));
+    statefulTask.resume();
     Thread.sleep(1000);
 
     // start from latest binlog, so no new event processed

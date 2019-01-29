@@ -15,7 +15,6 @@ import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.BeforeClass;
-import org.junit.Ignore;
 import org.junit.Test;
 
 public class ZkBasedStatefulTaskRunnerTest {
@@ -136,18 +135,6 @@ public class ZkBasedStatefulTaskRunnerTest {
     assertThat(taskRunner1.participantCount()).isLessThanOrEqualTo(2);
   }
 
-  @Ignore
-  @Test
-  public void onlyOneTaskPerRunner() throws Exception {
-    taskRunner2.shutdown();
-    for (int i = 0; i < 10; i++) {
-      taskRunner1.run();
-    }
-
-    Thread.sleep(200);
-    assertThat(taskRunner1.taskCount()).isLessThanOrEqualTo(1);
-  }
-
   @Test
   public void releaseLeadershipOnException() throws Exception {
     Thread.sleep(200);
@@ -165,7 +152,6 @@ public class ZkBasedStatefulTaskRunnerTest {
     countProducedByLastLeader = values.size();
     Thread.sleep(200);
 
-    System.err.println(values);
     // task continues on leader alive
     assertThat(values.size()).isGreaterThan(countProducedByLastLeader);
 

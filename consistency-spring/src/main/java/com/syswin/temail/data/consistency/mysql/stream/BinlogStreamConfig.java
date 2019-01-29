@@ -1,9 +1,7 @@
 package com.syswin.temail.data.consistency.mysql.stream;
 
 import com.syswin.temail.data.consistency.application.MQProducer;
-import java.io.IOException;
 import java.sql.SQLException;
-import java.util.function.Consumer;
 import javax.sql.DataSource;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.curator.framework.CuratorFramework;
@@ -72,28 +70,7 @@ class BinlogStreamConfig {
         password,
         binlogSyncRecorder);
 
-    return new StatefulTask() {
-      @Override
-      public void start(Consumer<Throwable> errorHandler) {
-        try {
-          binLogStream.start(eventHandler, errorHandler, tableNames);
-        } catch (IOException e) {
-          errorHandler.accept(e);
-        }
-      }
-
-      @Override
-      public void stop() {
-        binLogStream.stop();
-      }
-    };
+    return new BinlogStreamStatefulTask(binLogStream, eventHandler, tableNames);
   }
 
-  @Bean(initMethod = "start", destroyMethod = "shutdown")
-  ZkBasedStatefulTaskRunner taskRunner(
-      @Value("${app.consistency.binlog.participant.id}") String participantId,
-      StatefulTask task,
-      CuratorFramework curator) {
-    return new ZkBasedStatefulTaskRunner(participantId, task, curator);
-  }
 }

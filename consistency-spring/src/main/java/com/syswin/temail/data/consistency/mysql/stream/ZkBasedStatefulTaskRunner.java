@@ -1,12 +1,11 @@
 package com.syswin.temail.data.consistency.mysql.stream;
 
-import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.apache.curator.framework.recipes.leader.LeaderLatch.State.CLOSED;
 
 import java.io.EOFException;
 import java.io.IOException;
-import java.util.concurrent.ArrayBlockingQueue;
-import java.util.concurrent.ThreadPoolExecutor;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 import java.util.function.Consumer;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.curator.framework.CuratorFramework;
@@ -19,7 +18,7 @@ class ZkBasedStatefulTaskRunner {
   private final CuratorFramework curator;
   private final Consumer<Throwable> errorHandler = errorHandler();
   private volatile LeaderLatch leaderLatch;
-  private final ThreadPoolExecutor executor = singleTaskExecutor();
+  private final ExecutorService executor = Executors.newSingleThreadExecutor();
 
   private final String participantId;
   private final StatefulTask task;
@@ -52,7 +51,7 @@ class ZkBasedStatefulTaskRunner {
     run();
   }
 
-  void run() {
+  private void run() {
     executor.execute(() -> {
       try {
         while (!Thread.currentThread().isInterrupted()) {
@@ -99,24 +98,11 @@ class ZkBasedStatefulTaskRunner {
     };
   }
 
-  long taskCount() {
-    return executor.getQueue().size();
-  }
-
   boolean isLeader() {
     return leaderLatch.hasLeadership();
   }
 
   int participantCount() throws Exception {
     return leaderLatch.getParticipants().size();
-  }
-
-  private ThreadPoolExecutor singleTaskExecutor() {
-    return new ThreadPoolExecutor(1,
-        1,
-        0L,
-        MILLISECONDS,
-        new ArrayBlockingQueue<>(2), // up to 2 tasks to avoid frequent reconnect
-        new ThreadPoolExecutor.DiscardPolicy());
   }
 }
