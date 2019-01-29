@@ -6,8 +6,8 @@ import org.apache.curator.framework.CuratorFramework;
 @Slf4j
 public class BlockingZkBinlogSyncRecorder extends ZkBinlogSyncRecorder {
 
-  BlockingZkBinlogSyncRecorder(CuratorFramework curator) {
-    super(curator);
+  BlockingZkBinlogSyncRecorder(String clusterName, CuratorFramework curator) {
+    super(clusterName, curator);
   }
 
   @Override

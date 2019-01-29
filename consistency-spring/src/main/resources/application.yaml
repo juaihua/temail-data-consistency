@@ -8,6 +8,7 @@ mybatis:
 
 app:
   consistency:
+    cluster.name: consistency
     rocketmq:
       host: 192.168.15.37:9876
     executor:

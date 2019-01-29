@@ -1,5 +1,6 @@
 package com.syswin.temail.data.consistency.mysql.stream;
 
+import static com.syswin.temail.data.consistency.mysql.stream.ZookeeperPaths.ZK_ROOT_PATH;
 import static org.apache.curator.framework.recipes.leader.LeaderLatch.State.CLOSED;
 
 import java.io.EOFException;
@@ -14,7 +15,8 @@ import org.apache.curator.framework.recipes.leader.LeaderLatch;
 @Slf4j
 class ZkBasedStatefulTaskRunner {
 
-  private static final String LEADER_LATCH_PATH = "/syswin/temail/binlog_stream/leader";
+  private static final String LEADER_LATCH_PATH_TEMPLATE = ZK_ROOT_PATH + "/%s/leader";
+  private final String leaderLatchPath;
   private final CuratorFramework curator;
   private final Consumer<Throwable> errorHandler = errorHandler();
   private volatile LeaderLatch leaderLatch;
@@ -23,16 +25,17 @@ class ZkBasedStatefulTaskRunner {
   private final String participantId;
   private final StatefulTask task;
 
-  ZkBasedStatefulTaskRunner(String participantId, StatefulTask task, CuratorFramework curator) {
+  ZkBasedStatefulTaskRunner(String clusterName, String participantId, StatefulTask task, CuratorFramework curator) {
     this.participantId = participantId;
     this.task = task;
 
     this.curator = curator;
-    leaderLatch = new LeaderLatch(this.curator, LEADER_LATCH_PATH, participantId);
+    leaderLatchPath = String.format(LEADER_LATCH_PATH_TEMPLATE, clusterName);
+    leaderLatch = new LeaderLatch(curator, leaderLatchPath, participantId);
   }
 
   void start() throws Exception {
-    curator.create().orSetData().creatingParentsIfNeeded().forPath(LEADER_LATCH_PATH);
+    curator.create().orSetData().creatingParentsIfNeeded().forPath(leaderLatchPath);
 
     leaderLatch.start();
     curator.getConnectionStateListenable().addListener((client, newState) -> {
@@ -88,7 +91,7 @@ class ZkBasedStatefulTaskRunner {
       log.error("Unexpected exception when running task on participant {}", participantId, ex);
       task.stop();
       releaseLeadership();
-      leaderLatch = new LeaderLatch(curator, LEADER_LATCH_PATH, participantId);
+      leaderLatch = new LeaderLatch(curator, leaderLatchPath, participantId);
       try {
         leaderLatch.start();
       } catch (Exception e) {

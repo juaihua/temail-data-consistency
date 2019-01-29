@@ -10,9 +10,10 @@ class StatefulTaskRunnerConfig {
 
   @Bean(initMethod = "start", destroyMethod = "shutdown")
   ZkBasedStatefulTaskRunner taskRunner(
+      @Value("${app.consistency.cluster.name}") String clusterName,
       @Value("${app.consistency.binlog.participant.id}") String participantId,
       StatefulTask task,
       CuratorFramework curator) {
-    return new ZkBasedStatefulTaskRunner(participantId, task, curator);
+    return new ZkBasedStatefulTaskRunner(clusterName, participantId, task, curator);
   }
 }

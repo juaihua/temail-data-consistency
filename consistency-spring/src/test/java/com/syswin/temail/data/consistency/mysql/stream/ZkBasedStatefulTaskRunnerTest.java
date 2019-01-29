@@ -2,6 +2,7 @@ package com.syswin.temail.data.consistency.mysql.stream;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import com.seanyinx.github.unit.scaffolding.Randomness;
 import java.util.Queue;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentLinkedQueue;
@@ -23,6 +24,7 @@ public class ZkBasedStatefulTaskRunnerTest {
   private static CuratorFramework curator;
 
   private int counter = 0;
+  private final String clusterName = Randomness.uniquify("clusterName");
   private final Queue<Integer> values = new ConcurrentLinkedQueue<>();
   private final AtomicBoolean isBroken = new AtomicBoolean(false);
   private final StatefulTask task = new StatefulTask() {
@@ -73,8 +75,8 @@ public class ZkBasedStatefulTaskRunnerTest {
 
   @Before
   public void setUp() throws Exception {
-    taskRunner1 = new ZkBasedStatefulTaskRunner(UUID.randomUUID().toString(), task, curator);
-    taskRunner2 = new ZkBasedStatefulTaskRunner(UUID.randomUUID().toString(), task, curator);
+    taskRunner1 = new ZkBasedStatefulTaskRunner(clusterName, UUID.randomUUID().toString(), task, curator);
+    taskRunner2 = new ZkBasedStatefulTaskRunner(clusterName, UUID.randomUUID().toString(), task, curator);
 
     taskRunner1.start();
     taskRunner2.start();

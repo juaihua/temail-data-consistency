@@ -7,4 +7,6 @@ public interface BinlogSyncRecorder {
   String filename();
 
   long position();
+
+  String recordPath();
 }

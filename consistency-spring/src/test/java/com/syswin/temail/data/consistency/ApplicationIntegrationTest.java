@@ -1,6 +1,5 @@
 package com.syswin.temail.data.consistency;
 
-import static com.syswin.temail.data.consistency.mysql.stream.ZkBinlogSyncRecorder.BINLOG_POSITION_PATH;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.awaitility.Awaitility.waitAtMost;
 import static org.mockito.ArgumentMatchers.anyString;
@@ -10,6 +9,7 @@ import com.syswin.temail.data.consistency.StatefulTaskConfig.StoppableStatefulTa
 import com.syswin.temail.data.consistency.application.MQProducer;
 import com.syswin.temail.data.consistency.containers.MysqlContainer;
 import com.syswin.temail.data.consistency.containers.ZookeeperContainer;
+import com.syswin.temail.data.consistency.mysql.stream.BinlogSyncRecorder;
 import com.syswin.temail.data.consistency.mysql.stream.StatefulTask;
 import java.util.ArrayList;
 import java.util.List;
@@ -27,6 +27,7 @@ import org.junit.Test;
 import org.junit.rules.RuleChain;
 import org.junit.runner.RunWith;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.core.io.ClassPathResource;
@@ -78,6 +79,12 @@ public class ApplicationIntegrationTest {
 
   @Autowired
   private StoppableStatefulTask statefulTask;
+
+  @Autowired
+  private BinlogSyncRecorder recorder;
+
+  @Value("${app.consistency.cluster.name}")
+  private String clusterName;
 
   @BeforeClass
   public static void beforeClass() {
@@ -148,7 +155,7 @@ public class ApplicationIntegrationTest {
     DatabasePopulatorUtils.execute(databasePopulator, dataSource);
 
     // reset binlog position
-    curator.delete().forPath(BINLOG_POSITION_PATH);
+    curator.delete().forPath(recorder.recordPath());
     statefulTask.resume();
     Thread.sleep(1000);
 

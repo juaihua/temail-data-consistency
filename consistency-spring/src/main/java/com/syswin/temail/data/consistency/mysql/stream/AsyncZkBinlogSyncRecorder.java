@@ -14,8 +14,8 @@ public class AsyncZkBinlogSyncRecorder extends ZkBinlogSyncRecorder {
   private final long updateIntervalMillis;
   private volatile String binlogFilePosition;
 
-  AsyncZkBinlogSyncRecorder(CuratorFramework curator, long updateIntervalMillis) {
-    super(curator);
+  AsyncZkBinlogSyncRecorder(String clusterName, CuratorFramework curator, long updateIntervalMillis) {
+    super(clusterName, curator);
     this.updateIntervalMillis = updateIntervalMillis;
   }
 
