@@ -120,7 +120,7 @@ public class ApplicationIntegrationTest {
     // TODO: 2019/1/28 simulate network interruption
     mysqlBinLogStream.stop();
     DatabasePopulatorUtils.execute(databasePopulator, dataSource);
-    executor.execute(() -> mysqlBinLogStream.start());
+    executor.execute(() -> mysqlBinLogStream.start(ex -> {}));
 
     // resume for last known position
     waitAtMost(Duration.ONE_SECOND).untilAsserted(() -> assertThat(sentMessages).hasSize(10));
@@ -142,7 +142,7 @@ public class ApplicationIntegrationTest {
 
     // reset binlog position
     curator.delete().forPath(BINLOG_POSITION_PATH);
-    executor.execute(() -> mysqlBinLogStream.start());
+    executor.execute(() -> mysqlBinLogStream.start(ex -> {}));
     Thread.sleep(1000);
 
     // start from latest binlog, so no new event processed

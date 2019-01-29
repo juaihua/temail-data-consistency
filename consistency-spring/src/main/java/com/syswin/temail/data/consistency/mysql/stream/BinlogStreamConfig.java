@@ -3,6 +3,7 @@ package com.syswin.temail.data.consistency.mysql.stream;
 import com.syswin.temail.data.consistency.application.MQProducer;
 import java.io.IOException;
 import java.sql.SQLException;
+import java.util.function.Consumer;
 import javax.sql.DataSource;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.curator.framework.CuratorFramework;
@@ -48,7 +49,7 @@ class BinlogStreamConfig {
   @Bean
   EventHandler eventHandler(MQProducer mqProducer,
       @Value("${app.consistency.binlog.rocketmq.retry.interval:1000}") long retryIntervalMillis) {
-    return new MqEventSender(mqProducer, retryIntervalMillis);
+    return new MqEventSender(mqProducer, 3, retryIntervalMillis);
   }
 
   @Bean
@@ -73,12 +74,11 @@ class BinlogStreamConfig {
 
     return new StatefulTask() {
       @Override
-      public void start() {
-        // TODO: 2019/1/28 stop on disconnect from db
+      public void start(Consumer<Throwable> errorHandler) {
         try {
-          binLogStream.start(eventHandler, tableNames);
+          binLogStream.start(eventHandler, errorHandler, tableNames);
         } catch (IOException e) {
-          e.printStackTrace();
+          errorHandler.accept(e);
         }
       }
 

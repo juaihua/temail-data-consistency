@@ -14,10 +14,12 @@ import org.apache.rocketmq.remoting.exception.RemotingException;
 public class MqEventSender implements EventHandler {
 
   private final MQProducer mqProducer;
+  private final int maxRetries;
   private final long retryIntervalMillis;
 
-  MqEventSender(MQProducer mqProducer, long retryIntervalMillis) {
+  MqEventSender(MQProducer mqProducer, int maxRetries, long retryIntervalMillis) {
     this.mqProducer = mqProducer;
+    this.maxRetries = maxRetries;
     this.retryIntervalMillis = retryIntervalMillis;
   }
 
@@ -29,13 +31,16 @@ public class MqEventSender implements EventHandler {
   }
 
   private void send(ListenerEvent listenerEvent) {
-    while (!Thread.currentThread().isInterrupted()) {
+    for (int i = 0; !Thread.currentThread().isInterrupted(); i++) {
       try {
         log.debug("Sending event to MQ: {}", listenerEvent);
         mqProducer.send(listenerEvent.getContent(), listenerEvent.getTopic(), listenerEvent.getTag(), listenerEvent.key());
         return;
       } catch (RemotingException | MQClientException | MQBrokerException e) {
         log.error("Failed to send listener event by MQ and will retry: {}", listenerEvent, e);
+        if (i + 1 == maxRetries) {
+          throw new SendingMQMessageException("Failed to send listener event by MQ after retrying " + maxRetries + " times", e);
+        }
         sleep(listenerEvent);
       } catch (InterruptedException e) {
         onInterruption(listenerEvent, e);

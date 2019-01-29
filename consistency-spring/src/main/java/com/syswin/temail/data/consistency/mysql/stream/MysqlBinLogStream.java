@@ -13,6 +13,7 @@ import com.github.shyiko.mysql.binlog.event.deserialization.EventDataDeserialize
 import com.github.shyiko.mysql.binlog.event.deserialization.EventDeserializer;
 import com.github.shyiko.mysql.binlog.event.deserialization.NullEventDataDeserializer;
 import com.syswin.temail.data.consistency.domain.ListenerEvent;
+import com.syswin.temail.data.consistency.domain.SendingMQMessageException;
 import com.syswin.temail.data.consistency.domain.SendingStatus;
 import java.io.IOException;
 import java.io.Serializable;
@@ -22,6 +23,7 @@ import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+import java.util.function.Consumer;
 import java.util.stream.Collectors;
 import lombok.extern.slf4j.Slf4j;
 
@@ -45,14 +47,14 @@ class MysqlBinLogStream {
     this.client = new BinaryLogClient(hostname, port, username, password);
   }
 
-  void start(EventHandler eventHandler, String[] tableNames) throws IOException {
+  void start(EventHandler eventHandler, Consumer<Throwable> errorHandler, String[] tableNames) throws IOException {
     Set<String> tableNameSet = new HashSet<>();
     Collections.addAll(tableNameSet, tableNames);
 
     client.setBinlogFilename(binlogSyncRecorder.filename());
     client.setBinlogPosition(binlogSyncRecorder.position());
     client.setEventDeserializer(createEventDeserializerOf(TABLE_MAP, EXT_WRITE_ROWS));
-    client.registerEventListener(replicationEventListener(eventHandler, tableNameSet));
+    client.registerEventListener(replicationEventListener(eventHandler, errorHandler, tableNameSet));
 
     log.info("Connecting to Mysql at {}:{}", hostname, port);
     client.connect();
@@ -68,7 +70,11 @@ class MysqlBinLogStream {
     }
   }
 
-  private BinaryLogClient.EventListener replicationEventListener(EventHandler eventHandler, Set<String> tableNames) {
+  private BinaryLogClient.EventListener replicationEventListener(
+      EventHandler eventHandler,
+      Consumer<Throwable> errorHandler,
+      Set<String> tableNames) {
+
     log.debug("Registering event handler for database tables {}", tableNames);
     TableMapEventData[] eventData = new TableMapEventData[1];
     return event -> {
@@ -92,7 +98,7 @@ class MysqlBinLogStream {
 
             // listener events are sent in single element collections,
             // so it's safe to record binlog position once the collection of events is handled
-            eventHandler.handle(listenerEvents);
+            handleEvent(eventHandler, errorHandler, listenerEvents);
           }
 
           eventData[0] = null;
@@ -100,6 +106,15 @@ class MysqlBinLogStream {
       }
       binlogSyncRecorder.record(client.getBinlogFilename(), client.getBinlogPosition());
     };
+  }
+
+  private void handleEvent(EventHandler eventHandler, Consumer<Throwable> errorHandler, List<ListenerEvent> listenerEvents) {
+    try {
+      eventHandler.handle(listenerEvents);
+    } catch (SendingMQMessageException e) {
+      errorHandler.accept(e);
+      throw e;
+    }
   }
 
   private EventDeserializer createEventDeserializerOf(EventType... includedTypes) {

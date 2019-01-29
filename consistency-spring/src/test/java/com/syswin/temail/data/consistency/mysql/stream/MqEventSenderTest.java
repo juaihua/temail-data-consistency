@@ -9,6 +9,7 @@ import static org.awaitility.Awaitility.await;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 
 import com.syswin.temail.data.consistency.application.MQProducer;
@@ -33,7 +34,7 @@ public class MqEventSenderTest {
     sentMessages.add(body + "," + topic + "," + tags);
   };
 
-  private final MqEventSender sender = new MqEventSender(compositeMqProducer, 100L);
+  private final MqEventSender sender = new MqEventSender(compositeMqProducer, 100, 100L);
   private final ListenerEvent listenerEvent1 = new ListenerEvent(NEW, "foo", "private", "aaa");
   private final ListenerEvent listenerEvent2 = new ListenerEvent(NEW, "bar", "private", "bbb");
   private final List<ListenerEvent> listenerEvents = asList(listenerEvent1, listenerEvent2);
@@ -88,6 +89,25 @@ public class MqEventSenderTest {
 
     assertThat(sentMessages).isEmpty();
     await().atMost(1, SECONDS).untilTrue(interrupted);
+  }
+
+  @Test(timeout = 2000L)
+  public void retryUpToSpecifiedTimes() throws Exception {
+    doThrow(RemotingException.class)
+        .when(mqProducer)
+        .send(anyString(), anyString(), anyString(), anyString());
+
+    MqEventSender sender = new MqEventSender(compositeMqProducer, 3, 100L);
+
+    try {
+      sender.handle(listenerEvents);
+      expectFailing(SendingMQMessageException.class);
+    } catch (SendingMQMessageException e) {
+      e.printStackTrace();
+    }
+
+    assertThat(sentMessages).isEmpty();
+    verify(mqProducer, times(3)).send(anyString(), anyString(), anyString(), anyString());
   }
 
   @Test(timeout = 2000L)

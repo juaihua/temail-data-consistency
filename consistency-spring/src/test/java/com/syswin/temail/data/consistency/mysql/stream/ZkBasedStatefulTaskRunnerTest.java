@@ -6,6 +6,7 @@ import java.util.Queue;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.function.Consumer;
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.CuratorFrameworkFactory;
 import org.apache.curator.retry.ExponentialBackoffRetry;
@@ -24,19 +25,25 @@ public class ZkBasedStatefulTaskRunnerTest {
 
   private int counter = 0;
   private final Queue<Integer> values = new ConcurrentLinkedQueue<>();
+  private final AtomicBoolean isBroken = new AtomicBoolean(false);
   private final StatefulTask task = new StatefulTask() {
 
     private final AtomicBoolean isStopped = new AtomicBoolean(false);
 
     @Override
-    public void start() {
+    public void start(Consumer<Throwable> errorHandler) {
       isStopped.set(false);
+      isBroken.set(false);
       while (!isStopped.get() && !Thread.currentThread().isInterrupted()) {
         try {
           values.add(counter++);
           Thread.sleep(10);
         } catch (InterruptedException e) {
           Thread.currentThread().interrupt();
+        }
+
+        if (isBroken.get()) {
+          errorHandler.accept(new IllegalStateException("oops"));
         }
       }
     }
@@ -81,7 +88,7 @@ public class ZkBasedStatefulTaskRunnerTest {
   }
 
   @Test
-  public void runTaskOnLeaderOnly() throws InterruptedException {
+  public void runTaskOnLeaderOnly() throws Exception {
     Thread.sleep(500);
 
     ZkBasedStatefulTaskRunner leader = taskRunner1.isLeader() ? taskRunner1 : taskRunner2;
@@ -100,6 +107,8 @@ public class ZkBasedStatefulTaskRunnerTest {
       assertThat(current - previous).isOne();
       previous = current;
     }
+
+    assertThat(taskRunner1.participantCount()).isLessThanOrEqualTo(1);
   }
 
   @Test
@@ -123,6 +132,8 @@ public class ZkBasedStatefulTaskRunnerTest {
       assertThat(current - previous).isOne();
       previous = current;
     }
+
+    assertThat(taskRunner1.participantCount()).isLessThanOrEqualTo(2);
   }
 
   @Ignore
@@ -134,6 +145,39 @@ public class ZkBasedStatefulTaskRunnerTest {
     }
 
     Thread.sleep(200);
-    assertThat(taskRunner1.taskCount()).isEqualTo(1);
+    assertThat(taskRunner1.taskCount()).isLessThanOrEqualTo(1);
+  }
+
+  @Test
+  public void releaseLeadershipOnException() throws Exception {
+    Thread.sleep(200);
+
+    // 1st leader broke with error
+    isBroken.set(true);
+    int countProducedByLastLeader = values.size();
+    Thread.sleep(200);
+
+    // task continues on leader alive
+    assertThat(values.size()).isGreaterThan(countProducedByLastLeader);
+
+    // 2nd leader broke with error
+    isBroken.set(true);
+    countProducedByLastLeader = values.size();
+    Thread.sleep(200);
+
+    System.err.println(values);
+    // task continues on leader alive
+    assertThat(values.size()).isGreaterThan(countProducedByLastLeader);
+
+    // task executed on leader only
+    Integer previous = values.poll();
+    Integer current;
+    while (!values.isEmpty()) {
+      current = values.poll();
+      assertThat(current - previous).isOne();
+      previous = current;
+    }
+
+    assertThat(taskRunner1.participantCount()).isLessThanOrEqualTo(2);
   }
 }
