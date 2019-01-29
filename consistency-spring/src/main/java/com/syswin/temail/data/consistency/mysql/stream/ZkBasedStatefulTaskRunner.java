@@ -88,7 +88,7 @@ class ZkBasedStatefulTaskRunner {
         1,
         0L,
         MILLISECONDS,
-        new ArrayBlockingQueue<>(1),
+        new ArrayBlockingQueue<>(2), // up to 2 tasks to avoid frequent reconnect
         new ThreadPoolExecutor.DiscardPolicy());
   }
 }

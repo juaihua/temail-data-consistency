@@ -16,7 +16,7 @@ public class MqEventSender implements EventHandler {
   private final MQProducer mqProducer;
   private final long retryIntervalMillis;
 
-  public MqEventSender(MQProducer mqProducer, long retryIntervalMillis) {
+  MqEventSender(MQProducer mqProducer, long retryIntervalMillis) {
     this.mqProducer = mqProducer;
     this.retryIntervalMillis = retryIntervalMillis;
   }
@@ -31,6 +31,7 @@ public class MqEventSender implements EventHandler {
   private void send(ListenerEvent listenerEvent) {
     while (!Thread.currentThread().isInterrupted()) {
       try {
+        log.debug("Sending event to MQ: {}", listenerEvent);
         mqProducer.send(listenerEvent.getContent(), listenerEvent.getTopic(), listenerEvent.getTag(), listenerEvent.key());
         return;
       } catch (RemotingException | MQClientException | MQBrokerException e) {

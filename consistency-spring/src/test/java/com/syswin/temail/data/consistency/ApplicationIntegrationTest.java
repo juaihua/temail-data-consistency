@@ -1,18 +1,21 @@
 package com.syswin.temail.data.consistency;
 
+import static com.syswin.temail.data.consistency.mysql.stream.ZkBinlogSyncRecorder.BINLOG_POSITION_PATH;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.awaitility.Awaitility.waitAtMost;
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.Mockito.doAnswer;
 
 import com.syswin.temail.data.consistency.application.MQProducer;
 import com.syswin.temail.data.consistency.containers.MysqlContainer;
-import com.syswin.temail.data.consistency.mysql.stream.BinlogSyncRecorder;
-import com.syswin.temail.data.consistency.mysql.stream.MqEventSender;
-import com.syswin.temail.data.consistency.mysql.stream.MysqlBinLogStream;
-import java.io.IOException;
+import com.syswin.temail.data.consistency.containers.ZookeeperContainer;
+import com.syswin.temail.data.consistency.mysql.stream.StatefulTask;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.concurrent.TimeoutException;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 import javax.sql.DataSource;
+import org.apache.curator.framework.CuratorFramework;
 import org.awaitility.Duration;
 import org.junit.After;
 import org.junit.AfterClass;
@@ -23,6 +26,7 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.jdbc.datasource.init.DatabasePopulatorUtils;
 import org.springframework.jdbc.datasource.init.ResourceDatabasePopulator;
@@ -45,49 +49,62 @@ public class ApplicationIntegrationTest {
       .withEnv("MYSQL_PASSWORD", "password")
       .withEnv("MYSQL_ROOT_PASSWORD", "password");
 
+  @ClassRule
+  public static final ZookeeperContainer zookeeper = new ZookeeperContainer()
+      .withNetwork(NETWORK)
+      .withNetworkAliases("zookeeper-temail");
+
   private final ResourceDatabasePopulator databasePopulator = new ResourceDatabasePopulator();
 
   private final List<String> sentMessages = new ArrayList<>();
-  private final MQProducer mqProducer = (body, topic, tags, keys) -> sentMessages.add(body + "," + topic + "," + tags);
-  private final MqEventSender eventHandler = new MqEventSender(mqProducer, 1000L);
 
-  private final MockBinlogSyncRecorder binlogSyncRecorder = new MockBinlogSyncRecorder();
+  @MockBean
+  private MQProducer mqProducer;
+
+  private final ExecutorService executor = Executors.newSingleThreadExecutor();
 
   @Autowired
   private DataSource dataSource;
-  private MysqlBinLogStream mysqlBinLogStream;
+
+  @Autowired
+  private StatefulTask mysqlBinLogStream;
+
+  @Autowired
+  private CuratorFramework curator;
 
   @BeforeClass
   public static void beforeClass() {
     System.setProperty("spring.datasource.url",
         "jdbc:mysql://" + mysql.getContainerIpAddress() + ":" + mysql.getMappedPort(3306) + "/consistency?useSSL=false");
+
+    System.setProperty("app.consistency.binlog.zk.address",
+        zookeeper.getContainerIpAddress() + ":" + zookeeper.getMappedPort(2181));
   }
 
   @AfterClass
   public static void afterClass() {
     System.clearProperty("spring.datasource.url");
+    System.clearProperty("app.consistency.binlog.zk.address");
   }
 
   @Before
-  public void setUp() {
+  public void setUp() throws Exception {
+    doAnswer(invocationOnMock -> {
+      Object[] arguments = invocationOnMock.getArguments();
+      return sentMessages.add(arguments[0] + "," + arguments[1] + "," + arguments[2]);
+    }).when(mqProducer)
+        .send(anyString(), anyString(), anyString(), anyString());
+
     databasePopulator.addScript(new ClassPathResource("data.sql"));
-    mysqlBinLogStream = new MysqlBinLogStream(
-        mysql.getContainerIpAddress(),
-        mysql.getMappedPort(3306),
-        "root",
-        "password",
-        binlogSyncRecorder
-    );
   }
 
   @After
   public void tearDown() {
-    mysqlBinLogStream.stop();
+    executor.shutdownNow();
   }
 
   @Test
-  public void streamEventsToMq() throws IOException, TimeoutException, InterruptedException {
-    mysqlBinLogStream.start(eventHandler, "listener_event");
+  public void streamEventsToMq() throws Exception {
 
     DatabasePopulatorUtils.execute(databasePopulator, dataSource);
 
@@ -100,12 +117,13 @@ public class ApplicationIntegrationTest {
         "test5,lucy,john"
     );
 
+    // TODO: 2019/1/28 simulate network interruption
     mysqlBinLogStream.stop();
     DatabasePopulatorUtils.execute(databasePopulator, dataSource);
-    mysqlBinLogStream.start(eventHandler, "listener_event");
+    executor.execute(() -> mysqlBinLogStream.start());
 
     // resume for last known position
-    waitAtMost(Duration.ONE_SECOND).until(() -> sentMessages.size() == 10);
+    waitAtMost(Duration.ONE_SECOND).untilAsserted(() -> assertThat(sentMessages).hasSize(10));
     assertThat(sentMessages).containsExactly(
         "test1,bob,alice",
         "test2,jack,alice",
@@ -121,38 +139,13 @@ public class ApplicationIntegrationTest {
 
     mysqlBinLogStream.stop();
     DatabasePopulatorUtils.execute(databasePopulator, dataSource);
-    binlogSyncRecorder.reset();
-    mysqlBinLogStream.start(eventHandler, "listener_event");
+
+    // reset binlog position
+    curator.delete().forPath(BINLOG_POSITION_PATH);
+    executor.execute(() -> mysqlBinLogStream.start());
     Thread.sleep(1000);
 
     // start from latest binlog, so no new event processed
     assertThat(sentMessages).hasSize(10);
-  }
-
-  private static class MockBinlogSyncRecorder implements BinlogSyncRecorder {
-
-    private String binlogFilename;
-    private long binLogPosition;
-
-    @Override
-    public void record(String filename, long position) {
-      binlogFilename = filename;
-      binLogPosition = position;
-    }
-
-    @Override
-    public String filename() {
-      return binlogFilename;
-    }
-
-    @Override
-    public long position() {
-      return binLogPosition;
-    }
-
-    void reset() {
-      binlogFilename = null;
-      binLogPosition = 0;
-    }
   }
 }

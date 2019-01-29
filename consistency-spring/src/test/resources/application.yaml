@@ -1,7 +1,7 @@
 spring:
   datasource:
     url: jdbc:mysql://localhost:3316/consistency?useSSL=false
-    username: syswin
+    username: root
     password: password
     driver-class-name: com.mysql.jdbc.Driver
     initialize: true
@@ -28,3 +28,8 @@ app:
       keep-alive-seconds: 1000
       max-pool-size: 10
       queue-capacity: 20
+    binlog:
+      participant:
+        id: watcher
+      zk.address: localhost:2181
+      update.mode: blocking

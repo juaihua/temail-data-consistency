@@ -6,7 +6,7 @@ import org.apache.curator.framework.CuratorFramework;
 @Slf4j
 public abstract class ZkBinlogSyncRecorder implements BinlogSyncRecorder {
 
-  static final String BINLOG_POSITION_PATH = "/syswin/temail/binlog_stream/position";
+  public static final String BINLOG_POSITION_PATH = "/syswin/temail/binlog_stream/position";
   static final String SEPARATOR = ",";
   private final CuratorFramework curator;
 
@@ -16,9 +16,11 @@ public abstract class ZkBinlogSyncRecorder implements BinlogSyncRecorder {
 
   void updatePositionToZk(String filename, long position) {
     try {
+      log.debug("Updating binlog position [{},{}] to zookeeper", filename, position);
       curator.create().orSetData()
           .creatingParentsIfNeeded()
           .forPath(BINLOG_POSITION_PATH, (filename + SEPARATOR + position).getBytes());
+      log.debug("Updated binlog position [{},{}] to zookeeper", filename, position);
     } catch (Exception e) {
       log.error("Failed to record binlog position {} {} to zookeeper {}",
           filename,
@@ -30,6 +32,10 @@ public abstract class ZkBinlogSyncRecorder implements BinlogSyncRecorder {
   @Override
   public String filename() {
     try {
+      if (curator.checkExists().forPath(BINLOG_POSITION_PATH) == null) {
+        return null;
+      }
+
       return binlogPositionString().split(SEPARATOR)[0];
     } catch (Exception e) {
       log.error("Failed to retrieve binlog position on zookeeper with path {}", BINLOG_POSITION_PATH, e);
@@ -40,6 +46,10 @@ public abstract class ZkBinlogSyncRecorder implements BinlogSyncRecorder {
   @Override
   public long position() {
     try {
+      if (curator.checkExists().forPath(BINLOG_POSITION_PATH) == null) {
+        return 0L;
+      }
+
       return Long.parseLong(binlogPositionString().split(SEPARATOR)[1]);
     } catch (Exception e) {
       log.error("Failed to retrieve binlog position on zookeeper with path {}", BINLOG_POSITION_PATH, e);

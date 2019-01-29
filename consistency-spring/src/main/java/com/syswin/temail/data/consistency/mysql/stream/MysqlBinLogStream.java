@@ -22,21 +22,18 @@ import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
-import java.util.concurrent.TimeoutException;
 import java.util.stream.Collectors;
 import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
-public class MysqlBinLogStream {
-
-  private static final long DATABASE_CONNECT_TIMEOUT = 2000L;
+class MysqlBinLogStream {
 
   private final BinaryLogClient client;
   private final String hostname;
   private final int port;
   private final BinlogSyncRecorder binlogSyncRecorder;
 
-  public MysqlBinLogStream(String hostname,
+  MysqlBinLogStream(String hostname,
       int port,
       String username,
       String password,
@@ -48,7 +45,7 @@ public class MysqlBinLogStream {
     this.client = new BinaryLogClient(hostname, port, username, password);
   }
 
-  public void start(EventHandler eventHandler, String... tableNames) throws IOException, TimeoutException {
+  void start(EventHandler eventHandler, String[] tableNames) throws IOException {
     Set<String> tableNameSet = new HashSet<>();
     Collections.addAll(tableNameSet, tableNames);
 
@@ -57,28 +54,34 @@ public class MysqlBinLogStream {
     client.setEventDeserializer(createEventDeserializerOf(TABLE_MAP, EXT_WRITE_ROWS));
     client.registerEventListener(replicationEventListener(eventHandler, tableNameSet));
 
-    client.connect(DATABASE_CONNECT_TIMEOUT);
+    log.info("Connecting to Mysql at {}:{}", hostname, port);
+    client.connect();
   }
 
-  public void stop() {
+  void stop() {
     try {
       client.disconnect();
       client.getEventListeners().forEach(client::unregisterEventListener);
+      log.info("Disconnected from Mysql at {}:{}", hostname, port);
     } catch (IOException e) {
       log.warn("Failed to disconnect from MySql at {}:{}", hostname, port, e);
     }
   }
 
   private BinaryLogClient.EventListener replicationEventListener(EventHandler eventHandler, Set<String> tableNames) {
+    log.debug("Registering event handler for database tables {}", tableNames);
     TableMapEventData[] eventData = new TableMapEventData[1];
     return event -> {
+      log.debug("Received binlog event {}", event.getHeader().getEventType());
       if (event.getData() != null) {
         if (TABLE_MAP.equals(event.getHeader().getEventType())) {
           TableMapEventData data = event.getData();
           if (tableNames.contains(data.getTable())) {
+            log.debug("Processing binlog event: {}", event);
             eventData[0] = data;
           }
         } else if (EXT_WRITE_ROWS.equals(event.getHeader().getEventType()) && eventData[0] != null) {
+          log.debug("Processing binlog event: {}", event);
           WriteRowsEventData data = event.getData();
 
           if (data.getTableId() == eventData[0].getTableId()) {
@@ -111,6 +114,7 @@ public class MysqlBinLogStream {
 
     Set<EventType> includedEventTypes = new HashSet<>();
     Collections.addAll(includedEventTypes, includedTypes);
+    log.debug("Only interested events will be serialized: {}", includedEventTypes);
 
     for (EventType eventType : EventType.values()) {
       if (!includedEventTypes.contains(eventType)) {
