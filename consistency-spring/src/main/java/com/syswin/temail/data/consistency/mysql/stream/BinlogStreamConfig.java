@@ -35,7 +35,7 @@ class BinlogStreamConfig {
   @ConditionalOnProperty(value = "app.consistency.binlog.update.mode", havingValue = "async", matchIfMissing = true)
   @Bean(initMethod = "start", destroyMethod = "shutdown")
   BinlogSyncRecorder asyncBinlogSyncRecorder(CuratorFramework curator,
-      @Value("${app.consistency.binlog.update.interval:500}") long updateIntervalMillis) {
+      @Value("${app.consistency.binlog.update.interval:200}") long updateIntervalMillis) {
     log.info("Starting with async binlog recorder");
     return new AsyncZkBinlogSyncRecorder(clusterName, curator, updateIntervalMillis);
   }

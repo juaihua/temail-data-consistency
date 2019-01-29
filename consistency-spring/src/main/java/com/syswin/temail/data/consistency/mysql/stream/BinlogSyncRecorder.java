@@ -9,4 +9,6 @@ public interface BinlogSyncRecorder {
   long position();
 
   String recordPath();
+
+  void flush();
 }

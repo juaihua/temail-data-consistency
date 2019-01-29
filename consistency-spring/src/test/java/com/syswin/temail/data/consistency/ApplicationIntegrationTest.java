@@ -122,7 +122,7 @@ public class ApplicationIntegrationTest {
 
     DatabasePopulatorUtils.execute(databasePopulator, dataSource);
 
-    waitAtMost(Duration.ONE_SECOND).until(() -> sentMessages.size() == 5);
+    waitAtMost(Duration.ONE_SECOND).untilAsserted(() -> assertThat(sentMessages).hasSize(5));
     assertThat(sentMessages).containsExactly(
         "test1,bob,alice",
         "test2,jack,alice",

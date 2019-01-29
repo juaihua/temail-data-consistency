@@ -64,6 +64,7 @@ class MysqlBinLogStream {
     try {
       client.disconnect();
       client.getEventListeners().forEach(client::unregisterEventListener);
+      binlogSyncRecorder.flush();
       log.info("Disconnected from Mysql at {}:{}", hostname, port);
     } catch (IOException e) {
       log.warn("Failed to disconnect from MySql at {}:{}", hostname, port, e);
