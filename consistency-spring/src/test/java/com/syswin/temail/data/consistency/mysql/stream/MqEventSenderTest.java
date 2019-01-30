@@ -7,6 +7,7 @@ import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.awaitility.Awaitility.await;
 import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.Mockito.atLeast;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
@@ -34,7 +35,8 @@ public class MqEventSenderTest {
     sentMessages.add(body + "," + topic + "," + tags);
   };
 
-  private final MqEventSender sender = new MqEventSender(compositeMqProducer, 100, 100L);
+  private final int maxRetries = 3;
+  private final MqEventSender sender = new MqEventSender(compositeMqProducer, maxRetries, 100L);
   private final ListenerEvent listenerEvent1 = new ListenerEvent(NEW, "foo", "private", "aaa");
   private final ListenerEvent listenerEvent2 = new ListenerEvent(NEW, "bar", "private", "bbb");
   private final List<ListenerEvent> listenerEvents = asList(listenerEvent1, listenerEvent2);
@@ -70,7 +72,7 @@ public class MqEventSenderTest {
 
   @Test
   public void stopRetryingWhenInterrupted() throws Exception {
-    doThrow(RemotingException.class)
+    doThrow(SendingMQMessageException.class)
         .when(mqProducer)
         .send(anyString(), anyString(), anyString(), anyString());
 
@@ -84,11 +86,12 @@ public class MqEventSenderTest {
     });
 
     thread.start();
-    Thread.sleep(300L);
+    Thread.sleep(500L);
     thread.interrupt();
 
     assertThat(sentMessages).isEmpty();
     await().atMost(1, SECONDS).untilTrue(interrupted);
+    verify(mqProducer, atLeast(maxRetries + 1)).send(anyString(), anyString(), anyString(), anyString());
   }
 
   @Test(timeout = 2000L)
@@ -96,8 +99,6 @@ public class MqEventSenderTest {
     doThrow(RemotingException.class)
         .when(mqProducer)
         .send(anyString(), anyString(), anyString(), anyString());
-
-    MqEventSender sender = new MqEventSender(compositeMqProducer, 3, 100L);
 
     try {
       sender.handle(listenerEvents);
@@ -107,7 +108,7 @@ public class MqEventSenderTest {
     }
 
     assertThat(sentMessages).isEmpty();
-    verify(mqProducer, times(3)).send(anyString(), anyString(), anyString(), anyString());
+    verify(mqProducer, times(maxRetries + 1)).send(anyString(), anyString(), anyString(), anyString());
   }
 
   @Test(timeout = 2000L)

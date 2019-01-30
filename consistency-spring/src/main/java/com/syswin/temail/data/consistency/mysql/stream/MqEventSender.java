@@ -38,9 +38,12 @@ public class MqEventSender implements EventHandler {
         return;
       } catch (RemotingException | MQClientException | MQBrokerException e) {
         log.error("Failed to send listener event by MQ and will retry: {}", listenerEvent, e);
-        if (i + 1 == maxRetries) {
+        if (i == maxRetries) {
           throw new SendingMQMessageException("Failed to send listener event by MQ after retrying " + maxRetries + " times", e);
         }
+        sleep(listenerEvent);
+      } catch (SendingMQMessageException e) {
+        log.error("Failed to send listener event by MQ and will retry: {}", listenerEvent, e);
         sleep(listenerEvent);
       } catch (InterruptedException e) {
         onInterruption(listenerEvent, e);
