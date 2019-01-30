@@ -5,6 +5,8 @@ import static org.apache.curator.framework.recipes.leader.LeaderLatch.State.CLOS
 
 import java.io.EOFException;
 import java.io.IOException;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.function.Consumer;
@@ -19,6 +21,7 @@ class ZkBasedStatefulTaskRunner {
   private final String leaderLatchPath;
   private final CuratorFramework curator;
   private final Consumer<Throwable> errorHandler = errorHandler();
+  private final Map<String, LeaderLatch> leaderLatches = new ConcurrentHashMap<>();
   private volatile LeaderLatch leaderLatch;
   private final ExecutorService executor = Executors.newSingleThreadExecutor();
 
@@ -31,7 +34,7 @@ class ZkBasedStatefulTaskRunner {
 
     this.curator = curator;
     leaderLatchPath = String.format(LEADER_LATCH_PATH_TEMPLATE, clusterName);
-    leaderLatch = new LeaderLatch(curator, leaderLatchPath, participantId);
+    leaderLatch = createLeaderLatch(curator, participantId);
   }
 
   void start() throws Exception {
@@ -70,17 +73,18 @@ class ZkBasedStatefulTaskRunner {
   }
 
   void shutdown() {
-    task.stop();
     executor.shutdownNow();
-    releaseLeadership();
+    task.stop();
+    leaderLatches.forEach((id, leaderLatch) -> releaseLeadership(leaderLatch));
   }
 
-  private void releaseLeadership() {
+  private void releaseLeadership(LeaderLatch leaderLatch) {
     try {
       if (!CLOSED.equals(leaderLatch.getState())) {
         leaderLatch.close();
         log.info("Participant {} released leadership", leaderLatch.getId());
       }
+      leaderLatches.remove(leaderLatch.getId());
     } catch (IOException e) {
       log.warn("Failed to close leader latch of participant {}", leaderLatch.getId(), e);
     }
@@ -88,17 +92,29 @@ class ZkBasedStatefulTaskRunner {
 
   private Consumer<Throwable> errorHandler() {
     return ex -> {
-      log.error("Unexpected exception when running task on participant {}", participantId, ex);
+      log.error("Unexpected exception when running task on participant {}", leaderLatch.getId(), ex);
+      LeaderLatch latchToClose = replaceLeaderLatch();
       task.stop();
-      releaseLeadership();
-      leaderLatch = new LeaderLatch(curator, leaderLatchPath, participantId);
-      try {
-        leaderLatch.start();
-      } catch (Exception e) {
-        // this shall not happen
-        log.error("Failed to start leader latch of participant {}", participantId);
-      }
+      releaseLeadership(latchToClose);
     };
+  }
+
+  private LeaderLatch replaceLeaderLatch() {
+    LeaderLatch latchToClose = leaderLatch;
+    leaderLatch = createLeaderLatch(curator, participantId);
+    try {
+      leaderLatch.start();
+    } catch (Exception e) {
+      // this shall not happen
+      log.error("Failed to start leader latch of participant {}", leaderLatch.getId());
+    }
+    return latchToClose;
+  }
+
+  private LeaderLatch createLeaderLatch(CuratorFramework curator, String participantId) {
+    LeaderLatch leaderLatch = new LeaderLatch(curator, leaderLatchPath, participantId + "-" + System.currentTimeMillis());
+    leaderLatches.put(leaderLatch.getId(), leaderLatch);
+    return leaderLatch;
   }
 
   boolean isLeader() {

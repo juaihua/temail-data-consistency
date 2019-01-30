@@ -32,6 +32,19 @@ public class AsyncZkBinlogSyncRecorderTest extends ZkBinlogSyncRecorderTest {
   }
 
   @Test
+  public void forceUpdateBinlogPositionToZk() throws Exception {
+    recorder.start();
+    recorder.record(filename, position);
+    recorder.flush();
+
+    byte[] bytes = curator.getData().forPath(recorder.recordPath());
+    assertThat(new String(bytes)).isEqualTo(filename + SEPARATOR + position);
+
+    assertThat(recorder.filename()).isEqualTo(filename);
+    assertThat(recorder.position()).isEqualTo(position);
+  }
+
+  @Test
   public void skipUpdateIfNoChange() throws InterruptedException {
     AtomicInteger counter = new AtomicInteger();
     AsyncZkBinlogSyncRecorder recorder = new AsyncZkBinlogSyncRecorder(clusterName, curator, 100L) {

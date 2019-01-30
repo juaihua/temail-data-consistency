@@ -1,6 +1,8 @@
 package com.syswin.temail.data.consistency.mysql.stream;
 
+import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.awaitility.Awaitility.await;
 
 import com.seanyinx.github.unit.scaffolding.Randomness;
 import java.util.Queue;
@@ -121,6 +123,32 @@ public class ZkBasedStatefulTaskRunnerTest {
     Thread.sleep(200);
     zookeeper.restart();
     Thread.sleep(200);
+
+    // task resumes on reconnect
+    assertThat(values.size()).isGreaterThan(countProducedByLastLeader);
+
+    // task executed on leader only
+    Integer previous = values.poll();
+    Integer current;
+    while (!values.isEmpty()) {
+      current = values.poll();
+      assertThat(current - previous).isOne();
+      previous = current;
+    }
+
+    assertThat(taskRunner1.participantCount()).isLessThanOrEqualTo(2);
+  }
+
+  @Test
+  public void resumeBrokenTaskWhenReconnected() throws Exception {
+    Thread.sleep(200);
+
+    isBroken.set(true);
+    zookeeper.stop();
+    int countProducedByLastLeader = values.size();
+    Thread.sleep(200);
+    zookeeper.restart();
+    await().atMost(1, SECONDS).untilAsserted(() -> assertThat(curator.getZookeeperClient().isConnected()).isTrue());
 
     // task resumes on reconnect
     assertThat(values.size()).isGreaterThan(countProducedByLastLeader);
