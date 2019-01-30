@@ -4,6 +4,10 @@ import com.syswin.temail.data.consistency.application.MQProducer;
 import com.syswin.temail.data.consistency.domain.SendingMQMessageException;
 import java.io.UnsupportedEncodingException;
 import java.util.UUID;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicLong;
 import javax.annotation.PostConstruct;
 import javax.annotation.PreDestroy;
 import lombok.extern.slf4j.Slf4j;
@@ -24,7 +28,9 @@ public class RocketMQProducer implements MQProducer{
 
   private final DefaultMQProducer producer = new DefaultMQProducer("data-consistency");
 
-  private String host;
+  private final String host;
+  private final AtomicLong counter = new AtomicLong();
+  private final ScheduledExecutorService scheduledExecutor = Executors.newSingleThreadScheduledExecutor();
 
   public RocketMQProducer(@Value("${app.consistency.rocketmq.host}") String host) {
     this.host = host;
@@ -36,6 +42,9 @@ public class RocketMQProducer implements MQProducer{
     producer.setNamesrvAddr(host);
     producer.setInstanceName(UUID.randomUUID().toString());
     producer.start();
+    scheduledExecutor.scheduleWithFixedDelay(
+        () -> log.info("Sent {} messages since started", counter.get()),
+        10L, 10L, TimeUnit.SECONDS);
   }
 
   @Override
@@ -48,6 +57,7 @@ public class RocketMQProducer implements MQProducer{
     if (sendResult.getSendStatus() != SendStatus.SEND_OK) {
       throw new SendingMQMessageException(sendResult.toString());
     }
+    counter.getAndIncrement();
   }
 
   private SendResult loadBalancedSend(String tag, Message message)
@@ -64,5 +74,6 @@ public class RocketMQProducer implements MQProducer{
   public void stop() {
     producer.shutdown();
     log.info("MQ producer shutdown");
+    scheduledExecutor.shutdownNow();
   }
 }
