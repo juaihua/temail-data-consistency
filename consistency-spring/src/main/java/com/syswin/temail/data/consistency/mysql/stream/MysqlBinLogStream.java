@@ -6,6 +6,8 @@ import static com.github.shyiko.mysql.binlog.event.deserialization.EventDeserial
 import static com.github.shyiko.mysql.binlog.event.deserialization.EventDeserializer.CompatibilityMode.DATE_AND_TIME_AS_LONG;
 
 import com.github.shyiko.mysql.binlog.BinaryLogClient;
+import com.github.shyiko.mysql.binlog.BinaryLogClient.EventListener;
+import com.github.shyiko.mysql.binlog.event.Event;
 import com.github.shyiko.mysql.binlog.event.EventType;
 import com.github.shyiko.mysql.binlog.event.TableMapEventData;
 import com.github.shyiko.mysql.binlog.event.WriteRowsEventData;
@@ -77,45 +79,7 @@ class MysqlBinLogStream {
       Set<String> tableNames) {
 
     log.debug("Registering event handler for database tables {}", tableNames);
-    TableMapEventData[] eventData = new TableMapEventData[1];
-    return event -> {
-      log.debug("Received binlog event {}", event.getHeader().getEventType());
-      if (event.getData() != null) {
-        if (TABLE_MAP.equals(event.getHeader().getEventType())) {
-          TableMapEventData data = event.getData();
-          if (tableNames.contains(data.getTable())) {
-            log.debug("Processing binlog event: {}", event);
-            eventData[0] = data;
-          }
-        } else if (EXT_WRITE_ROWS.equals(event.getHeader().getEventType()) && eventData[0] != null) {
-          log.debug("Processing binlog event: {}", event);
-          WriteRowsEventData data = event.getData();
-
-          if (data.getTableId() == eventData[0].getTableId()) {
-            List<ListenerEvent> listenerEvents = data.getRows()
-                .stream()
-                .map(this::toListenerEvent)
-                .collect(Collectors.toList());
-
-            // listener events are sent in single element collections,
-            // so it's safe to record binlog position once the collection of events is handled
-            handleEvent(eventHandler, errorHandler, listenerEvents);
-          }
-
-          eventData[0] = null;
-        }
-      }
-      binlogSyncRecorder.record(client.getBinlogFilename(), client.getBinlogPosition());
-    };
-  }
-
-  private void handleEvent(EventHandler eventHandler, Consumer<Throwable> errorHandler, List<ListenerEvent> listenerEvents) {
-    try {
-      eventHandler.handle(listenerEvents);
-    } catch (SendingMQMessageException e) {
-      errorHandler.accept(e);
-      throw e;
-    }
+    return new TableEventListener(eventHandler, errorHandler, tableNames);
   }
 
   private EventDeserializer createEventDeserializerOf(EventType... includedTypes) {
@@ -141,14 +105,77 @@ class MysqlBinLogStream {
     return eventDeserializer;
   }
 
-  private ListenerEvent toListenerEvent(Serializable[] columns) {
-    return new ListenerEvent(((long) columns[0]),
-        SendingStatus.valueOf(new String((byte[]) columns[1])),
-        new String((byte[]) columns[2]),
-        new String((byte[]) columns[3]),
-        new String((byte[]) columns[4]),
-        Timestamp.from(Instant.ofEpochMilli(((long) columns[5]))),
-        Timestamp.from(Instant.ofEpochMilli(((long) columns[6])))
-    );
+  // TODO: 2019/1/30 this class can be separated from binlog stream to reduce coupling, in case of future extension
+  private class TableEventListener implements EventListener {
+
+    private final EventHandler eventHandler;
+    private final Consumer<Throwable> errorHandler;
+    private final Set<String> tableNames;
+    private TableMapEventData eventData;
+
+    TableEventListener(EventHandler eventHandler, Consumer<Throwable> errorHandler, Set<String> tableNames) {
+      this.eventHandler = eventHandler;
+      this.errorHandler = errorHandler;
+      this.tableNames = tableNames;
+    }
+
+    @Override
+    public void onEvent(Event event) {
+      log.debug("Received binlog event {}", event.getHeader().getEventType());
+      if (event.getData() != null) {
+        handleDeserializedEvent(event);
+      }
+      binlogSyncRecorder.record(client.getBinlogFilename(), client.getBinlogPosition());
+    }
+
+    private void handleDeserializedEvent(Event event) {
+      if (TABLE_MAP.equals(event.getHeader().getEventType())) {
+        TableMapEventData data = event.getData();
+        if (tableNames.contains(data.getTable())) {
+          log.debug("Processing binlog event: {}", event);
+          eventData = data;
+        }
+      } else if (EXT_WRITE_ROWS.equals(event.getHeader().getEventType()) && eventData != null) {
+        log.debug("Processing binlog event: {}", event);
+        handleInsertEvent(event);
+      }
+    }
+
+    private void handleInsertEvent(Event event) {
+      WriteRowsEventData data = event.getData();
+
+      if (data.getTableId() == eventData.getTableId()) {
+        List<ListenerEvent> listenerEvents = data.getRows()
+            .stream()
+            .map(this::toListenerEvent)
+            .collect(Collectors.toList());
+
+        // listener events are sent in single element collections,
+        // so it's safe to record binlog position once the collection of events is handled
+        handleEvent(eventHandler, errorHandler, listenerEvents);
+      }
+
+      eventData = null;
+    }
+
+    private void handleEvent(EventHandler eventHandler, Consumer<Throwable> errorHandler, List<ListenerEvent> listenerEvents) {
+      try {
+        eventHandler.handle(listenerEvents);
+      } catch (SendingMQMessageException e) {
+        errorHandler.accept(e);
+        throw e;
+      }
+    }
+
+    private ListenerEvent toListenerEvent(Serializable[] columns) {
+      return new ListenerEvent(((long) columns[0]),
+          SendingStatus.valueOf(new String((byte[]) columns[1])),
+          new String((byte[]) columns[2]),
+          new String((byte[]) columns[3]),
+          new String((byte[]) columns[4]),
+          Timestamp.from(Instant.ofEpochMilli(((long) columns[5]))),
+          Timestamp.from(Instant.ofEpochMilli(((long) columns[6])))
+      );
+    }
   }
 }
