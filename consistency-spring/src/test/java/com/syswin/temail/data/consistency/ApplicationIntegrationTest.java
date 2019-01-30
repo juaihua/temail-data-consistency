@@ -38,7 +38,13 @@ import org.springframework.test.context.junit4.SpringRunner;
 import org.testcontainers.containers.Network;
 
 @RunWith(SpringRunner.class)
-@SpringBootTest(classes = {TestApplication.class, StatefulTaskConfig.class})
+@SpringBootTest(classes = {TestApplication.class, StatefulTaskConfig.class}, properties = {
+    "spring.autoconfigure.exclude[0]=com.systoon.integration.spring.boot.disconf.DisconfAutoConfiguration",
+    "spring.autoconfigure.exclude[1]=com.systoon.integration.spring.boot.disconf.context.config.ConfigurationPropertiesRebinderAutoConfiguration",
+    "spring.autoconfigure.exclude[2]=com.systoon.integration.spring.boot.disconf.context.config.RefreshAutoConfiguration",
+    "spring.datasource.username=root",
+    "spring.datasource.password=password"
+})
 @ActiveProfiles("dev")
 public class ApplicationIntegrationTest {
 
