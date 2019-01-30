@@ -6,7 +6,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import org.junit.Before;
 import org.junit.Test;
 
-public class BlockingZkBinlogSyncRecorderTest extends ZkBinlogSyncRecorderTest {
+public class BlockingZkBinlogSyncRecorderTest extends ZkBinlogSyncRecorderTestBase {
 
   @Before
   public void setUp() throws Exception {

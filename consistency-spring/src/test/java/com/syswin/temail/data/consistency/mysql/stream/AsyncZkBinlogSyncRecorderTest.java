@@ -9,7 +9,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import org.junit.Before;
 import org.junit.Test;
 
-public class AsyncZkBinlogSyncRecorderTest extends ZkBinlogSyncRecorderTest {
+public class AsyncZkBinlogSyncRecorderTest extends ZkBinlogSyncRecorderTestBase {
 
   @Before
   public void setUp() throws Exception {
