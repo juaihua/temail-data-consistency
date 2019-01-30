@@ -34,7 +34,7 @@ public class ListenerEventService {
       try {
         future.get(5, TimeUnit.SECONDS);
       } catch (Exception e) {
-        log.error("task excute error:{}",e.getStackTrace());
+        log.error("task execute error:{}", e);
       }
     }
   }

@@ -63,7 +63,7 @@ public class TaskService {
       try {
         future.get(500, TimeUnit.MILLISECONDS);
       } catch (Exception e) {
-        log.error("task excute error:{}",e.getStackTrace());
+        log.error("task execute error:{}", e);
       }
     }
   }
