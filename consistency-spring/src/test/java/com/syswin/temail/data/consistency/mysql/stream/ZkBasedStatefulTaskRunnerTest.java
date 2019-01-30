@@ -123,6 +123,7 @@ public class ZkBasedStatefulTaskRunnerTest {
     Thread.sleep(200);
     zookeeper.restart();
     await().atMost(1, SECONDS).untilAsserted(() -> assertThat(curator.getZookeeperClient().isConnected()).isTrue());
+    Thread.sleep(200);
 
     // task resumes on reconnect
     assertThat(values.size()).isGreaterThan(countProducedByLastLeader);
@@ -149,6 +150,7 @@ public class ZkBasedStatefulTaskRunnerTest {
     Thread.sleep(200);
     zookeeper.restart();
     await().atMost(1, SECONDS).untilAsserted(() -> assertThat(curator.getZookeeperClient().isConnected()).isTrue());
+    Thread.sleep(200);
 
     // task resumes on reconnect
     assertThat(values.size()).isGreaterThan(countProducedByLastLeader);
