@@ -49,8 +49,9 @@ class BinlogStreamConfig {
 
   @Bean
   EventHandler eventHandler(MQProducer mqProducer,
+      @Value("${app.consistency.binlog.rocketmq.retry.limit:3}") int maxRetries,
       @Value("${app.consistency.binlog.rocketmq.retry.interval:1000}") long retryIntervalMillis) {
-    return new MqEventSender(mqProducer, 3, retryIntervalMillis);
+    return new MqEventSender(mqProducer, maxRetries, retryIntervalMillis);
   }
 
   @Bean
