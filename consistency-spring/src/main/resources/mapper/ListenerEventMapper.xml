@@ -23,4 +23,8 @@
     update listener_event set status=#{status,jdbcType=VARCHAR}
     where id=#{id}
   </update>
+  <delete id="batchDelete">
+    delete from listener_event
+    limit #{limit}
+  </delete>
 </mapper>

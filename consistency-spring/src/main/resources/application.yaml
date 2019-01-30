@@ -8,6 +8,7 @@ mybatis:
 
 app:
   consistency:
+    cluster.name: consistency
     rocketmq:
       host: 192.168.15.37:9876
     executor:
@@ -15,6 +16,10 @@ app:
       keep-alive-seconds: 1000
       max-pool-size: 10
       queue-capacity: 20
+    binlog:
+      participant:
+        id: watcher
+      zk.address: localhost:2181
 
 logging:
   level:

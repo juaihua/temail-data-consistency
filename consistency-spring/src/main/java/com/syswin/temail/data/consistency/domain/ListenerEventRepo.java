@@ -7,4 +7,6 @@ public interface ListenerEventRepo {
   List<ListenerEvent> findReadyToSend(String topic);
 
   int delete(long id);
+
+  void batchDelete(int limit);
 }
