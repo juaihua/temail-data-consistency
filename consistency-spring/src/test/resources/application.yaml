@@ -21,6 +21,7 @@ logging:
 
 app:
   consistency:
+    sync.mode: binlog
     cluster.name: consistency
     rocketmq:
       host: 192.168.15.37:9876
@@ -34,6 +35,11 @@ app:
         id: watcher
       zk.address: localhost:2181
       update.mode: blocking
+      housekeeper.sweep.interval: 1000
+
+mybatis:
+  mapper-locations: classpath*:mapper/*Mapper.xml
+  config-location: classpath:mybatis/mybatis-config.xml
 
 ---
 
@@ -44,6 +50,3 @@ spring:
     driverClassName: org.h2.Driver
     url: jdbc:h2:mem:consistency;MODE=MYSQL
 
-mybatis:
-  mapper-locations: classpath*:mapper/*Mapper.xml
-  config-location: classpath:mybatis/mybatis-config.xml

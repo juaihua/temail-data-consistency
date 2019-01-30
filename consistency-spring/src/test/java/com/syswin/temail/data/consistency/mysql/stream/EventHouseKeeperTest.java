@@ -4,6 +4,8 @@ import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.awaitility.Awaitility.waitAtMost;
 import static org.mockito.Mockito.doAnswer;
+import static org.mockito.Mockito.doThrow;
+import static org.mockito.Mockito.reset;
 
 import com.syswin.temail.data.consistency.domain.ListenerEventRepo;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -34,8 +36,33 @@ public class EventHouseKeeperTest {
 
   @Test
   public void deleteEventsPeriodically() {
-    houseKeeper.start();
+    houseKeeper.start(ex -> {});
 
     waitAtMost(1, SECONDS).untilAsserted(() -> assertThat(deleteCount.get()).isGreaterThanOrEqualTo(1));
+  }
+
+  @Test
+  public void deleteEventsPeriodicallyOnException() {
+    reset(eventRepo);
+    doThrow(RuntimeException.class)
+        .doAnswer(invocationOnMock -> deleteCount.getAndIncrement())
+        .when(eventRepo)
+        .batchDelete(limit);
+
+    houseKeeper.start(ex -> {});
+
+    waitAtMost(1, SECONDS).untilAsserted(() -> assertThat(deleteCount.get()).isGreaterThanOrEqualTo(1));
+  }
+
+  @Test
+  public void stopEventHousekeeping() throws InterruptedException {
+    houseKeeper.start(ex -> {});
+
+    waitAtMost(1, SECONDS).untilAsserted(() -> assertThat(deleteCount.get()).isGreaterThanOrEqualTo(1));
+
+    houseKeeper.stop();
+    deleteCount.set(0);
+    Thread.sleep(200L);
+    assertThat(deleteCount).hasValue(0);
   }
 }

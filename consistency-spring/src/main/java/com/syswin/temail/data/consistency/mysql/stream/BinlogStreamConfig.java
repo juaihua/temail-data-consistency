@@ -1,6 +1,7 @@
 package com.syswin.temail.data.consistency.mysql.stream;
 
 import com.syswin.temail.data.consistency.application.MQProducer;
+import com.syswin.temail.data.consistency.domain.ListenerEventRepo;
 import java.sql.SQLException;
 import javax.sql.DataSource;
 import lombok.extern.slf4j.Slf4j;
@@ -60,6 +61,9 @@ class BinlogStreamConfig {
       @Value("${spring.datasource.username}") String username,
       @Value("${spring.datasource.password}") String password,
       @Value("${app.consistency.binlog.mysql.tables:listener_event}") String[] tableNames,
+      @Value("${app.consistency.binlog.housekeeper.sweep.limit:100}") int limit,
+      @Value("${app.consistency.binlog.housekeeper.sweep.interval:5000}") long sweepInterval,
+      ListenerEventRepo eventRepo,
       EventHandler eventHandler,
       BinlogSyncRecorder binlogSyncRecorder) throws SQLException {
 
@@ -74,7 +78,8 @@ class BinlogStreamConfig {
         password,
         binlogSyncRecorder);
 
-    return new BinlogStreamStatefulTask(binLogStream, eventHandler, tableNames);
+    return new CompositeStatefulTask(
+        new EventHouseKeeper(eventRepo, limit, sweepInterval),
+        new BinlogStreamStatefulTask(binLogStream, eventHandler, tableNames));
   }
-
 }
