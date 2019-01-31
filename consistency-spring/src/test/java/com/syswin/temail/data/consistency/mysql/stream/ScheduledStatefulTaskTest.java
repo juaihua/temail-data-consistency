@@ -7,7 +7,6 @@ import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.reset;
 
-import com.syswin.temail.data.consistency.domain.ListenerEventRepo;
 import java.util.concurrent.atomic.AtomicInteger;
 import org.junit.After;
 import org.junit.Before;
@@ -17,50 +16,49 @@ import org.mockito.Mockito;
 public class ScheduledStatefulTaskTest {
 
   private final AtomicInteger deleteCount = new AtomicInteger();
-  private final ListenerEventRepo eventRepo = Mockito.mock(ListenerEventRepo.class);
+  private final Runnable runnable = Mockito.mock(Runnable.class);
 
-  private final int limit = 50;
-  private final ScheduledStatefulTask houseKeeper = new ScheduledStatefulTask(eventRepo, limit, 100L);
+  private final ScheduledStatefulTask scheduledStatefulTask = new ScheduledStatefulTask(runnable, 100L);
 
   @Before
   public void setUp() {
     doAnswer(invocationOnMock -> deleteCount.getAndIncrement())
-        .when(eventRepo)
-        .batchDelete(limit);
+        .when(runnable)
+        .run();
   }
 
   @After
   public void tearDown() {
-    houseKeeper.shutdown();
+    scheduledStatefulTask.shutdown();
   }
 
   @Test
   public void deleteEventsPeriodically() {
-    houseKeeper.start(ex -> {});
+    scheduledStatefulTask.start(ex -> {});
 
     waitAtMost(1, SECONDS).untilAsserted(() -> assertThat(deleteCount.get()).isGreaterThanOrEqualTo(1));
   }
 
   @Test
   public void deleteEventsPeriodicallyOnException() {
-    reset(eventRepo);
+    reset(runnable);
     doThrow(RuntimeException.class)
         .doAnswer(invocationOnMock -> deleteCount.getAndIncrement())
-        .when(eventRepo)
-        .batchDelete(limit);
+        .when(runnable)
+        .run();
 
-    houseKeeper.start(ex -> {});
+    scheduledStatefulTask.start(ex -> {});
 
     waitAtMost(1, SECONDS).untilAsserted(() -> assertThat(deleteCount.get()).isGreaterThanOrEqualTo(1));
   }
 
   @Test
   public void stopEventHousekeeping() throws InterruptedException {
-    houseKeeper.start(ex -> {});
+    scheduledStatefulTask.start(ex -> {});
 
     waitAtMost(1, SECONDS).untilAsserted(() -> assertThat(deleteCount.get()).isGreaterThanOrEqualTo(1));
 
-    houseKeeper.stop();
+    scheduledStatefulTask.stop();
     deleteCount.set(0);
     Thread.sleep(200L);
     assertThat(deleteCount).hasValue(0);

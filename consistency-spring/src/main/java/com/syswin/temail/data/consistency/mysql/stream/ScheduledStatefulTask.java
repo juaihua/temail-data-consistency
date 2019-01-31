@@ -2,7 +2,6 @@ package com.syswin.temail.data.consistency.mysql.stream;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 
-import com.syswin.temail.data.consistency.domain.ListenerEventRepo;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.function.Consumer;
@@ -11,16 +10,14 @@ import lombok.extern.slf4j.Slf4j;
 @Slf4j
 class ScheduledStatefulTask implements StatefulTask {
 
-  private final ListenerEventRepo eventRepo;
-  private final int limit;
-  private final long sweepInterval;
+  private final long scheduledInterval;
   private final ScheduledExecutorService scheduledExecutor = Executors.newSingleThreadScheduledExecutor();
+  private final Runnable runnable;
   private volatile boolean started = false;
 
-  ScheduledStatefulTask(ListenerEventRepo eventRepo, int limit, long sweepInterval) {
-    this.eventRepo = eventRepo;
-    this.limit = limit;
-    this.sweepInterval = sweepInterval;
+  ScheduledStatefulTask(Runnable runnable, long scheduledInterval) {
+    this.scheduledInterval = scheduledInterval;
+    this.runnable = runnable;
     start();
   }
 
@@ -38,16 +35,14 @@ class ScheduledStatefulTask implements StatefulTask {
     scheduledExecutor.scheduleWithFixedDelay(
         () -> {
           if (started) {
-            log.debug("Deleting {} events for housekeeping", limit);
             try {
-              eventRepo.batchDelete(limit);
-              log.debug("Deleted {} events for housekeeping", limit);
+              runnable.run();
             } catch (Exception e) {
-              log.error("Failed to delete {} events during housekeeping", limit, e);
+              log.error("Failed to run scheduled stateful task", e);
             }
           }
         },
-        sweepInterval, sweepInterval, MILLISECONDS);
+        scheduledInterval, scheduledInterval, MILLISECONDS);
   }
 
   void shutdown() {
