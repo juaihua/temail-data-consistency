@@ -169,7 +169,7 @@ class MysqlBinLogStream {
 
     private ListenerEvent toListenerEvent(Serializable[] columns) {
       return new ListenerEvent(((long) columns[0]),
-          SendingStatus.valueOf(new String((byte[]) columns[1])),
+          SendingStatus.valueOf(new String((byte[]) columns[1]).toUpperCase()),
           new String((byte[]) columns[2]),
           new String((byte[]) columns[3]),
           new String((byte[]) columns[4]),

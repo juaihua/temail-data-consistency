@@ -29,6 +29,7 @@ public class RocketMQProducer implements MQProducer{
   private final DefaultMQProducer producer = new DefaultMQProducer("data-consistency");
 
   private final String host;
+  // TODO: 2019/1/31 expose prometheus metric instead
   private final AtomicLong counter = new AtomicLong();
   private final ScheduledExecutorService scheduledExecutor = Executors.newSingleThreadScheduledExecutor();
 
