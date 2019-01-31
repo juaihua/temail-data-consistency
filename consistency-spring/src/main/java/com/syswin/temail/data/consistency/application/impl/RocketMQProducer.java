@@ -32,6 +32,7 @@ public class RocketMQProducer implements MQProducer{
   // TODO: 2019/1/31 expose prometheus metric instead
   private final AtomicLong counter = new AtomicLong();
   private final ScheduledExecutorService scheduledExecutor = Executors.newSingleThreadScheduledExecutor();
+  private long previousCount = 0L;
 
   public RocketMQProducer(@Value("${app.consistency.rocketmq.host}") String host) {
     this.host = host;
@@ -44,7 +45,13 @@ public class RocketMQProducer implements MQProducer{
     producer.setInstanceName(UUID.randomUUID().toString());
     producer.start();
     scheduledExecutor.scheduleWithFixedDelay(
-        () -> log.info("Sent {} messages since started", counter.get()),
+        () -> {
+          long count = counter.get();
+          if (count > previousCount) {
+            log.info("Sent {} messages since started", count);
+            previousCount = count;
+          }
+        },
         10L, 10L, TimeUnit.SECONDS);
   }
 
