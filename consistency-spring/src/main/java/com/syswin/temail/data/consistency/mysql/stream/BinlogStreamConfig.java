@@ -79,7 +79,7 @@ class BinlogStreamConfig {
         binlogSyncRecorder);
 
     return new CompositeStatefulTask(
-        new EventHouseKeeper(eventRepo, limit, sweepInterval),
+        new ScheduledStatefulTask(eventRepo, limit, sweepInterval),
         new BinlogStreamStatefulTask(binLogStream, eventHandler, tableNames));
   }
 }

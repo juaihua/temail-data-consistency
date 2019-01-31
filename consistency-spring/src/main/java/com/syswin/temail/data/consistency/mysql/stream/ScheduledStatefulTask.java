@@ -9,7 +9,7 @@ import java.util.function.Consumer;
 import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
-class EventHouseKeeper implements StatefulTask {
+class ScheduledStatefulTask implements StatefulTask {
 
   private final ListenerEventRepo eventRepo;
   private final int limit;
@@ -17,7 +17,7 @@ class EventHouseKeeper implements StatefulTask {
   private final ScheduledExecutorService scheduledExecutor = Executors.newSingleThreadScheduledExecutor();
   private volatile boolean started = false;
 
-  EventHouseKeeper(ListenerEventRepo eventRepo, int limit, long sweepInterval) {
+  ScheduledStatefulTask(ListenerEventRepo eventRepo, int limit, long sweepInterval) {
     this.eventRepo = eventRepo;
     this.limit = limit;
     this.sweepInterval = sweepInterval;

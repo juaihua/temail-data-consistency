@@ -14,13 +14,13 @@ import org.junit.Before;
 import org.junit.Test;
 import org.mockito.Mockito;
 
-public class EventHouseKeeperTest {
+public class ScheduledStatefulTaskTest {
 
   private final AtomicInteger deleteCount = new AtomicInteger();
   private final ListenerEventRepo eventRepo = Mockito.mock(ListenerEventRepo.class);
 
   private final int limit = 50;
-  private final EventHouseKeeper houseKeeper = new EventHouseKeeper(eventRepo, limit, 100L);
+  private final ScheduledStatefulTask houseKeeper = new ScheduledStatefulTask(eventRepo, limit, 100L);
 
   @Before
   public void setUp() {
