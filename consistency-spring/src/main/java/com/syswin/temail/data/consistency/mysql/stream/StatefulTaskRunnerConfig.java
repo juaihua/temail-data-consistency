@@ -4,8 +4,6 @@ import org.apache.curator.framework.CuratorFramework;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.togglz.core.manager.EnumBasedFeatureProvider;
-import org.togglz.core.spi.FeatureProvider;
 
 @Configuration
 class StatefulTaskRunnerConfig {
@@ -17,10 +15,5 @@ class StatefulTaskRunnerConfig {
       StatefulTask task,
       CuratorFramework curator) {
     return new ZkBasedStatefulTaskRunner(clusterName, participantId, task, curator);
-  }
-
-  @Bean
-  FeatureProvider featureProvider() {
-    return new EnumBasedFeatureProvider().addFeatureEnum(DataSyncFeature.class);
   }
 }
