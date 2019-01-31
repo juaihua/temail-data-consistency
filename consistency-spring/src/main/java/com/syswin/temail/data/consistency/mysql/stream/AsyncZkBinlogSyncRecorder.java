@@ -25,7 +25,7 @@ public class AsyncZkBinlogSyncRecorder extends ZkBinlogSyncRecorder {
   public void record(String filename, long position) {
     this.binlogFilePosition = filename + SEPARATOR + position;
     updated.set(true);
-    log.debug("Saved binlog position [{}] locally", binlogFilePosition);
+    log.trace("Saved binlog position [{}] locally", binlogFilePosition);
   }
 
   @Override
