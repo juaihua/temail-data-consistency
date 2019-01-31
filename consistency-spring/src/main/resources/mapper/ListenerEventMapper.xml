@@ -25,6 +25,7 @@
   </update>
   <delete id="batchDelete">
     delete from listener_event
+    order by id asc
     limit #{limit}
   </delete>
 </mapper>

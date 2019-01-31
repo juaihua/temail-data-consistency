@@ -121,7 +121,7 @@ class MysqlBinLogStream {
 
     @Override
     public void onEvent(Event event) {
-      log.debug("Received binlog event {}", event.getHeader().getEventType());
+      log.trace("Received binlog event {}", event.getHeader().getEventType());
       if (event.getData() != null) {
         handleDeserializedEvent(event);
       }
