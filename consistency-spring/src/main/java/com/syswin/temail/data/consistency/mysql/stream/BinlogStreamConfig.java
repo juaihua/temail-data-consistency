@@ -1,5 +1,7 @@
 package com.syswin.temail.data.consistency.mysql.stream;
 
+import static com.syswin.temail.data.consistency.mysql.stream.DataSyncFeature.BINLOG;
+
 import com.syswin.temail.data.consistency.application.MQProducer;
 import com.syswin.temail.data.consistency.domain.ListenerEventRepo;
 import java.sql.SQLException;
@@ -12,6 +14,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.togglz.core.manager.FeatureManager;
 
 @Slf4j
 @Configuration
@@ -50,9 +53,10 @@ class BinlogStreamConfig {
 
   @Bean
   EventHandler eventHandler(MQProducer mqProducer,
+      FeatureManager featureManager,
       @Value("${app.consistency.binlog.rocketmq.retry.limit:3}") int maxRetries,
       @Value("${app.consistency.binlog.rocketmq.retry.interval:1000}") long retryIntervalMillis) {
-    return new MqEventSender(mqProducer, maxRetries, retryIntervalMillis);
+    return new MqEventSender(new ToggleMqProducer(featureManager, BINLOG, mqProducer), maxRetries, retryIntervalMillis);
   }
 
   @Bean
@@ -63,6 +67,7 @@ class BinlogStreamConfig {
       @Value("${app.consistency.binlog.mysql.tables:listener_event}") String[] tableNames,
       @Value("${app.consistency.binlog.housekeeper.sweep.limit:100}") int limit,
       @Value("${app.consistency.binlog.housekeeper.sweep.interval:5000}") long sweepInterval,
+      FeatureManager featureManager,
       ListenerEventRepo eventRepo,
       EventHandler eventHandler,
       BinlogSyncRecorder binlogSyncRecorder) throws SQLException {
@@ -79,7 +84,7 @@ class BinlogStreamConfig {
         binlogSyncRecorder);
 
     return new CompositeStatefulTask(
-        new ScheduledStatefulTask(new EventHousekeeper(eventRepo, limit), sweepInterval),
+        new ScheduledStatefulTask(new ToggleRunnable(featureManager, BINLOG, new EventHousekeeper(eventRepo, limit)), sweepInterval),
         new BinlogStreamStatefulTask(binLogStream, eventHandler, tableNames));
   }
 }

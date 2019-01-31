@@ -39,6 +39,8 @@ import org.testcontainers.containers.Network;
 
 @RunWith(SpringRunner.class)
 @SpringBootTest(classes = {TestApplication.class, StatefulTaskConfig.class}, properties = {
+    "togglz.features.POLL.enabled=false",
+    "togglz.features.BINLOG.enabled=true",
     "spring.autoconfigure.exclude[0]=com.systoon.integration.spring.boot.disconf.DisconfAutoConfiguration",
     "spring.autoconfigure.exclude[1]=com.systoon.integration.spring.boot.disconf.context.config.ConfigurationPropertiesRebinderAutoConfiguration",
     "spring.autoconfigure.exclude[2]=com.systoon.integration.spring.boot.disconf.context.config.RefreshAutoConfiguration",

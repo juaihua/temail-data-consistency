@@ -24,6 +24,7 @@
   </dependencyManagement>
   <properties>
     <curator.version>4.1.0</curator.version>
+    <togglz.version>2.6.1.Final</togglz.version>
   </properties>
   <dependencies>
     <dependency>
@@ -134,6 +135,16 @@
           <artifactId>log4j</artifactId>
         </exclusion>
       </exclusions>
+    </dependency>
+    <dependency>
+      <groupId>org.togglz</groupId>
+      <artifactId>togglz-spring-boot-starter</artifactId>
+      <version>${togglz.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>org.togglz</groupId>
+      <artifactId>togglz-console</artifactId>
+      <version>${togglz.version}</version>
     </dependency>
 
     <dependency>

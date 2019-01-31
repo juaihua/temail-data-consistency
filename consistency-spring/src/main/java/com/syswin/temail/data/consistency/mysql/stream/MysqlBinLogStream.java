@@ -58,7 +58,7 @@ class MysqlBinLogStream {
     client.setEventDeserializer(createEventDeserializerOf(TABLE_MAP, EXT_WRITE_ROWS));
     client.registerEventListener(replicationEventListener(eventHandler, errorHandler, tableNameSet));
 
-    log.info("Connecting to Mysql at {}:{}", hostname, port);
+    log.info("Connecting to Mysql at {}:{} from binlog {}/{}", hostname, port, client.getBinlogFilename(), client.getBinlogPosition());
     client.connect();
   }
 

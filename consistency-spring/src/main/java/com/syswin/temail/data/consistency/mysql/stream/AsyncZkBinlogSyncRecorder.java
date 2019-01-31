@@ -31,7 +31,7 @@ public class AsyncZkBinlogSyncRecorder extends ZkBinlogSyncRecorder {
   @Override
   public void flush() {
     flushIfUpdated();
-    log.debug("Flushed binlog position [{}] to zookeeper", binlogFilePosition);
+    log.info("Flushed binlog position [{}] to zookeeper", binlogFilePosition);
   }
 
   @Override

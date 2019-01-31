@@ -17,7 +17,7 @@ class EventHousekeeper implements Runnable {
   @Override
   public void run() {
     log.debug("Deleting {} events for housekeeping", limit);
-    eventRepo.batchDelete(limit);
-    log.debug("Deleted {} events for housekeeping", limit);
+    int count = eventRepo.batchDelete(limit);
+    log.debug("Deleted {} events for housekeeping", count);
   }
 }

@@ -6,11 +6,9 @@ import org.quartz.JobBuilder;
 import org.quartz.JobDetail;
 import org.quartz.Trigger;
 import org.quartz.TriggerBuilder;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
-@ConditionalOnProperty(value = "app.consistency.sync.mode", havingValue = "poll", matchIfMissing = true)
 @Configuration
 public class QuartzConfiguration {
 

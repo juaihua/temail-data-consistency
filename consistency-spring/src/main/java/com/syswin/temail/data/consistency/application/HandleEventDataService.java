@@ -7,19 +7,14 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.stereotype.Service;
 
-@Service
 @Slf4j
 public class HandleEventDataService {
 
   private final MQProducer mqProducer;
-
   private final ListenerEventRepo listenerEventRepo;
 
 
-  @Autowired
   public HandleEventDataService(MQProducer mqProducer, ListenerEventRepo listenerEventRepo) {
     this.mqProducer = mqProducer;
     this.listenerEventRepo = listenerEventRepo;

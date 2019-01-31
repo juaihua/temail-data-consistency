@@ -10,7 +10,7 @@ public abstract class ZkBinlogSyncRecorder implements BinlogSyncRecorder {
 
   private static final String BINLOG_POSITION_PATH_TEMPLATE = ZK_ROOT_PATH + "/%s/position";
   private final String recordPath;
-  static final String SEPARATOR = ",";
+  static final String SEPARATOR = "/";
   private final CuratorFramework curator;
 
   ZkBinlogSyncRecorder(String clusterName, CuratorFramework curator) {
