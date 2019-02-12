@@ -5,11 +5,8 @@ import java.util.List;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
-import org.springframework.stereotype.Service;
 
-@Service
 @Slf4j
 public class ListenerEventService {
 
@@ -18,7 +15,6 @@ public class ListenerEventService {
 
   private final ThreadPoolTaskExecutor taskExecutor;
 
-  @Autowired
   public ListenerEventService(TaskService taskService, ThreadPoolTaskExecutor taskExecutor) {
     this.taskService = taskService;
     this.taskExecutor = taskExecutor;
