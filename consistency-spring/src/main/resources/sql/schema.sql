@@ -4,7 +4,7 @@ CREATE TABLE IF NOT EXISTS `listener_event` (
   `status` varchar(10) NOT NULL DEFAULT 'NEW' COMMENT '监听事件类型NEW SENDED',
   `content` mediumtext COMMENT '消息内容',
   `topic` varchar(100) DEFAULT '',
-  `tag` varchar(32) DEFAULT '',
+  `tag` varchar(320) DEFAULT '',
   `create_time` timestamp NULL DEFAULT CURRENT_TIMESTAMP COMMENT '生成时间',
   `update_time` timestamp NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '修改时间',
   PRIMARY KEY (`id`)

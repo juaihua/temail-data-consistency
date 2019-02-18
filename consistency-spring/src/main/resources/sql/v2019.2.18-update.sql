@@ -1,0 +1,1 @@
+alter table `listener_event` modify column `tag` varchar(320);
