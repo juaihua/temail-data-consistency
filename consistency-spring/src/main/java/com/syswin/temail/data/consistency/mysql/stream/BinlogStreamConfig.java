@@ -5,6 +5,7 @@ import static com.syswin.temail.data.consistency.mysql.stream.DataSyncFeature.BI
 import com.syswin.temail.data.consistency.application.MQProducer;
 import com.syswin.temail.data.consistency.domain.ListenerEventRepo;
 import java.sql.SQLException;
+import java.util.Random;
 import javax.sql.DataSource;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.curator.framework.CuratorFramework;
@@ -20,6 +21,7 @@ import org.togglz.core.manager.FeatureManager;
 @Configuration
 class BinlogStreamConfig {
 
+  private final Random random = new Random(System.currentTimeMillis());
   @Value("${app.consistency.cluster.name}")
   private String clusterName;
 
@@ -64,6 +66,7 @@ class BinlogStreamConfig {
       DataSource dataSource,
       @Value("${spring.datasource.username}") String username,
       @Value("${spring.datasource.password}") String password,
+      @Value("${app.consistency.binlog.mysql.serverId:0}") long serverId,
       @Value("${app.consistency.binlog.mysql.tables:listener_event}") String[] tableNames,
       @Value("${app.consistency.binlog.housekeeper.sweep.limit:1000}") int limit,
       @Value("${app.consistency.binlog.housekeeper.sweep.interval:2000}") long sweepInterval,
@@ -77,10 +80,12 @@ class BinlogStreamConfig {
         .replaceFirst("/.*$", "")
         .split(":");
 
+    serverId = serverId == 0 ? random.nextInt(Integer.MAX_VALUE) + 1 : serverId;
     MysqlBinLogStream binLogStream = new MysqlBinLogStream(databaseUrl[0],
         Integer.parseInt(databaseUrl[1]),
         username,
         password,
+        serverId,
         binlogSyncRecorder);
 
     return new CompositeStatefulTask(

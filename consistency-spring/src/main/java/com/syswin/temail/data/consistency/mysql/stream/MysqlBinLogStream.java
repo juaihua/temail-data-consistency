@@ -35,16 +35,19 @@ class MysqlBinLogStream {
   private final BinaryLogClient client;
   private final String hostname;
   private final int port;
+  private final long serverId;
   private final BinlogSyncRecorder binlogSyncRecorder;
 
   MysqlBinLogStream(String hostname,
       int port,
       String username,
       String password,
+      long serverId,
       BinlogSyncRecorder binlogSyncRecorder) {
 
     this.hostname = hostname;
     this.port = port;
+    this.serverId = serverId;
     this.binlogSyncRecorder = binlogSyncRecorder;
     this.client = new BinaryLogClient(hostname, port, username, password);
   }
@@ -53,6 +56,7 @@ class MysqlBinLogStream {
     Set<String> tableNameSet = new HashSet<>();
     Collections.addAll(tableNameSet, tableNames);
 
+    client.setServerId(serverId);
     client.setGtidSetFallbackToPurged(true);
     client.setGtidSet(binlogSyncRecorder.position());
     startFromLatestBinlogInitially();
