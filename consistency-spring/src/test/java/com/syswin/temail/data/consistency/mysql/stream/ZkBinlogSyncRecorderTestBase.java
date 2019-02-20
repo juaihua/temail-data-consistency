@@ -51,25 +51,14 @@ public class ZkBinlogSyncRecorderTestBase {
     curator.close();
   }
 
-  @Test(expected = IllegalStateException.class)
-  public void blowsUpWhenGettingFileNameIfNotConnectedToZookeeper() {
-    curator.close();
-    recorder.filename();
-  }
-
   @Test (expected = IllegalStateException.class)
-  public void blowsUpWhenGettingPositionIfNotConnectedToZookeeper() {
+  public void blowsUpWhenGettingGTID_IfNotConnectedToZookeeper() {
     curator.close();
     recorder.position();
   }
 
   @Test
-  public void nullFileNameWhenNoDataOnZookeeper() {
-    assertThat(recorder.filename()).isNull();
-  }
-
-  @Test
-  public void zeroPositionWhenNoDataOnZookeeper() {
-    assertThat(recorder.position()).isZero();
+  public void emptyGTID_WhenNoDataOnZookeeper() {
+    assertThat(recorder.position()).isEmpty();
   }
 }

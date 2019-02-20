@@ -1,5 +1,5 @@
 
-CREATE TABLE `listener_event` (
+CREATE TABLE IF NOT EXISTS `listener_event` (
   `id` bigint(20) NOT NULL AUTO_INCREMENT COMMENT '主键',
   `status` varchar(10) NOT NULL DEFAULT 'NEW' COMMENT '监听事件类型NEW SENDED',
   `content` mediumtext COMMENT '消息内容',

@@ -53,12 +53,13 @@ class MysqlBinLogStream {
     Set<String> tableNameSet = new HashSet<>();
     Collections.addAll(tableNameSet, tableNames);
 
-    client.setBinlogFilename(binlogSyncRecorder.filename());
-    client.setBinlogPosition(binlogSyncRecorder.position());
+    client.setGtidSetFallbackToPurged(true);
+    client.setGtidSet(binlogSyncRecorder.position());
+    startFromLatestBinlogInitially();
     client.setEventDeserializer(createEventDeserializerOf(TABLE_MAP, EXT_WRITE_ROWS));
     client.registerEventListener(replicationEventListener(eventHandler, errorHandler, tableNameSet));
 
-    log.info("Connecting to Mysql at {}:{} from binlog {}/{}", hostname, port, client.getBinlogFilename(), client.getBinlogPosition());
+    log.info("Connecting to Mysql at {}:{} from binlog [{}]", hostname, port, client.getGtidSet());
     client.connect();
   }
 
@@ -70,6 +71,13 @@ class MysqlBinLogStream {
       log.info("Disconnected from Mysql at {}:{}", hostname, port);
     } catch (IOException e) {
       log.warn("Failed to disconnect from MySql at {}:{}", hostname, port, e);
+    }
+  }
+
+  private void startFromLatestBinlogInitially() {
+    if (binlogSyncRecorder.position().isEmpty()) {
+      client.setBinlogFilename(null);
+      client.setBinlogPosition(0L);
     }
   }
 
@@ -121,11 +129,24 @@ class MysqlBinLogStream {
 
     @Override
     public void onEvent(Event event) {
-      log.trace("Received binlog event {}", event.getHeader().getEventType());
+      log.trace("Received binlog event {}", event);
       if (event.getData() != null) {
         handleDeserializedEvent(event);
       }
-      binlogSyncRecorder.record(client.getBinlogFilename(), client.getBinlogPosition());
+      if (!client.getGtidSet().isEmpty()) {
+        binlogSyncRecorder.record(latestGTID());
+      }
+    }
+
+    // the known GTID set format: master server UUID:sequence_no_range
+    // e.g. 3809c41e-34fb-11e9-a425-0242ac140002:1-4
+    // the last seen GTID is therefore 3809c41e-34fb-11e9-a425-0242ac140002:4
+    private String latestGTID() {
+      int delimiter = client.getGtidSet().indexOf(":");
+      String sequenceRange = client.getGtidSet().substring(delimiter);
+      String uuid = client.getGtidSet().substring(0, delimiter + 1);
+
+      return uuid + sequenceRange.substring(sequenceRange.indexOf("-") + 1);
     }
 
     private void handleDeserializedEvent(Event event) {

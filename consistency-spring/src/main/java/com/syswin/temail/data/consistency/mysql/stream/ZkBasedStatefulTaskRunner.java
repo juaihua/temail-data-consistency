@@ -65,6 +65,7 @@ class ZkBasedStatefulTaskRunner {
           leaderLatch.await();
           log.info("Participant {} is running with leadership", leaderLatch.getId());
           task.start(errorHandler);
+          log.info("Participant {} completed task with leadership", leaderLatch.getId());
         }
       } catch (InterruptedException | EOFException e) {
         log.warn("Failed to acquire leadership due to interruption", e);

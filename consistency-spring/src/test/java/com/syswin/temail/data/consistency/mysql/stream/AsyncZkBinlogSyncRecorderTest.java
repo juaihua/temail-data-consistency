@@ -1,6 +1,5 @@
 package com.syswin.temail.data.consistency.mysql.stream;
 
-import static com.syswin.temail.data.consistency.mysql.stream.ZkBinlogSyncRecorder.SEPARATOR;
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.awaitility.Awaitility.await;
@@ -20,28 +19,26 @@ public class AsyncZkBinlogSyncRecorderTest extends ZkBinlogSyncRecorderTestBase 
   @Test
   public void recordBinlogPositionToZk() {
     recorder.start();
-    recorder.record(filename, position);
+    recorder.record(filename);
 
     await().atMost(1, SECONDS).ignoreExceptions().untilAsserted(() -> {
       byte[] bytes = curator.getData().forPath(recorder.recordPath());
-      assertThat(new String(bytes)).isEqualTo(filename + SEPARATOR + position);
+      assertThat(new String(bytes)).isEqualTo(filename);
     });
 
-    assertThat(recorder.filename()).isEqualTo(filename);
-    assertThat(recorder.position()).isEqualTo(position);
+    assertThat(recorder.position()).isEqualTo(filename);
   }
 
   @Test
   public void forceUpdateBinlogPositionToZk() throws Exception {
     recorder.start();
-    recorder.record(filename, position);
+    recorder.record(filename);
     recorder.flush();
 
     byte[] bytes = curator.getData().forPath(recorder.recordPath());
-    assertThat(new String(bytes)).isEqualTo(filename + SEPARATOR + position);
+    assertThat(new String(bytes)).isEqualTo(filename);
 
-    assertThat(recorder.filename()).isEqualTo(filename);
-    assertThat(recorder.position()).isEqualTo(position);
+    assertThat(recorder.position()).isEqualTo(filename);
   }
 
   @Test
@@ -49,23 +46,22 @@ public class AsyncZkBinlogSyncRecorderTest extends ZkBinlogSyncRecorderTestBase 
     AtomicInteger counter = new AtomicInteger();
     AsyncZkBinlogSyncRecorder recorder = new AsyncZkBinlogSyncRecorder(clusterName, curator, 100L) {
       @Override
-      void updatePositionToZk(String filename, long position) {
+      public void record(String position) {
         counter.getAndIncrement();
-        super.updatePositionToZk(filename, position);
+        super.updatePositionToZk(position);
       }
     };
 
     recorder.start();
-    recorder.record(filename, position);
+    recorder.record(filename);
 
     await().atMost(1, SECONDS).ignoreExceptions().untilAsserted(() -> {
       byte[] bytes = curator.getData().forPath(recorder.recordPath());
-      assertThat(new String(bytes)).isEqualTo(filename + SEPARATOR + position);
+      assertThat(new String(bytes)).isEqualTo(filename);
     });
 
     Thread.sleep(200);
-    assertThat(recorder.filename()).isEqualTo(filename);
-    assertThat(recorder.position()).isEqualTo(position);
+    assertThat(recorder.position()).isEqualTo(filename);
     assertThat(counter).hasValue(1);
   }
 }

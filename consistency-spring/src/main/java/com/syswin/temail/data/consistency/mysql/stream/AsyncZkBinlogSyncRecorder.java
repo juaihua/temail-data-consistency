@@ -14,7 +14,7 @@ public class AsyncZkBinlogSyncRecorder extends ZkBinlogSyncRecorder {
   private final ScheduledExecutorService scheduledExecutor = Executors.newSingleThreadScheduledExecutor();
   private final long updateIntervalMillis;
   private final AtomicBoolean updated = new AtomicBoolean();
-  private volatile String binlogFilePosition;
+  private volatile String position;
 
   AsyncZkBinlogSyncRecorder(String clusterName, CuratorFramework curator, long updateIntervalMillis) {
     super(clusterName, curator);
@@ -22,16 +22,16 @@ public class AsyncZkBinlogSyncRecorder extends ZkBinlogSyncRecorder {
   }
 
   @Override
-  public void record(String filename, long position) {
-    this.binlogFilePosition = filename + SEPARATOR + position;
+  public void record(String position) {
+    this.position = position;
     updated.set(true);
-    log.trace("Saved binlog position [{}] locally", binlogFilePosition);
+    log.trace("Saved binlog position [{}] locally", position);
   }
 
   @Override
   public void flush() {
     flushIfUpdated();
-    log.info("Flushed binlog position [{}] to zookeeper", binlogFilePosition);
+    log.info("Flushed binlog position [{}] to zookeeper", position);
   }
 
   @Override
@@ -42,8 +42,7 @@ public class AsyncZkBinlogSyncRecorder extends ZkBinlogSyncRecorder {
 
   private void flushIfUpdated() {
     if (updated.compareAndSet(true, false)) {
-      String[] strings = binlogFilePosition.split(SEPARATOR);
-      updatePositionToZk(strings[0], Long.parseLong(strings[1]));
+      updatePositionToZk(position);
     }
   }
 

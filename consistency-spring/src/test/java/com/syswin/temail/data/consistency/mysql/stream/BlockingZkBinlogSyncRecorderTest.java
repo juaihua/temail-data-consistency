@@ -1,6 +1,5 @@
 package com.syswin.temail.data.consistency.mysql.stream;
 
-import static com.syswin.temail.data.consistency.mysql.stream.ZkBinlogSyncRecorder.SEPARATOR;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import org.junit.Before;
@@ -17,12 +16,11 @@ public class BlockingZkBinlogSyncRecorderTest extends ZkBinlogSyncRecorderTestBa
   @Test
   public void recordBinlogPositionToZk() throws Exception {
     recorder.start();
-    recorder.record(filename, position);
+    recorder.record(filename);
 
-    assertThat(recorder.filename()).isEqualTo(filename);
-    assertThat(recorder.position()).isEqualTo(position);
+    assertThat(recorder.position()).isEqualTo(filename);
 
     byte[] bytes = curator.getData().forPath(recorder.recordPath());
-    assertThat(new String(bytes)).isEqualTo(filename + SEPARATOR + position);
+    assertThat(new String(bytes)).isEqualTo(filename);
   }
 }

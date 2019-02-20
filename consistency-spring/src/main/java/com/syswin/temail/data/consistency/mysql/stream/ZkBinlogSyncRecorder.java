@@ -10,7 +10,6 @@ public abstract class ZkBinlogSyncRecorder implements BinlogSyncRecorder {
 
   private static final String BINLOG_POSITION_PATH_TEMPLATE = ZK_ROOT_PATH + "/%s/position";
   private final String recordPath;
-  static final String SEPARATOR = "/";
   private final CuratorFramework curator;
 
   ZkBinlogSyncRecorder(String clusterName, CuratorFramework curator) {
@@ -18,43 +17,29 @@ public abstract class ZkBinlogSyncRecorder implements BinlogSyncRecorder {
     this.recordPath = String.format(BINLOG_POSITION_PATH_TEMPLATE, clusterName);
   }
 
-  void updatePositionToZk(String filename, long position) {
+  void updatePositionToZk(String position) {
     try {
-      log.debug("Updating binlog position [{},{}] to zookeeper", filename, position);
+      log.debug("Updating binlog position [{}] to zookeeper", position);
       curator.create().orSetData()
           .creatingParentsIfNeeded()
-          .forPath(recordPath, (filename + SEPARATOR + position).getBytes());
-      log.debug("Updated binlog position [{},{}] to zookeeper", filename, position);
+          .forPath(recordPath, position.getBytes());
+      log.debug("Updated binlog position [{}] to zookeeper", position);
     } catch (Exception e) {
-      log.error("Failed to record binlog position {} {} to zookeeper {}",
-          filename,
+      log.error("Failed to record binlog position {} to zookeeper {}",
           position,
-          curator.getZookeeperClient().getCurrentConnectionString());
+          curator.getZookeeperClient().getCurrentConnectionString(),
+          e);
     }
   }
 
   @Override
-  public String filename() {
+  public String position() {
     try {
       if (curator.checkExists().forPath(recordPath) == null) {
-        return null;
+        return "";
       }
 
-      return binlogPositionString().split(SEPARATOR)[0];
-    } catch (Exception e) {
-      log.error("Failed to retrieve binlog position on zookeeper with path {}", recordPath, e);
-      throw new IllegalStateException(e);
-    }
-  }
-
-  @Override
-  public long position() {
-    try {
-      if (curator.checkExists().forPath(recordPath) == null) {
-        return 0L;
-      }
-
-      return Long.parseLong(binlogPositionString().split(SEPARATOR)[1]);
+      return binlogPositionString();
     } catch (Exception e) {
       log.error("Failed to retrieve binlog position on zookeeper with path {}", recordPath, e);
       throw new IllegalStateException(e);
