@@ -142,11 +142,7 @@ class MysqlBinLogStream {
     // e.g. 3809c41e-34fb-11e9-a425-0242ac140002:1-4
     // the last seen GTID is therefore 3809c41e-34fb-11e9-a425-0242ac140002:4
     private String latestGTID() {
-      int delimiter = client.getGtidSet().indexOf(":");
-      String sequenceRange = client.getGtidSet().substring(delimiter);
-      String uuid = client.getGtidSet().substring(0, delimiter + 1);
-
-      return uuid + sequenceRange.substring(sequenceRange.indexOf("-") + 1);
+      return client.getGtidSet();
     }
 
     private void handleDeserializedEvent(Event event) {
