@@ -215,7 +215,7 @@ class MysqlBinLogStream {
 
     @Override
     public void onConnect(BinaryLogClient client) {
-      log.info("Connected to Mysql at {}:{} on server {} starting from binlog position {}",
+      log.info("Connected to Mysql at {}:{} on server {} starting from binlog position [{}]",
           hostname,
           port,
           client.getServerId(),
@@ -224,7 +224,7 @@ class MysqlBinLogStream {
 
     @Override
     public void onDisconnect(BinaryLogClient client) {
-      log.info("Disconnected from Mysql at {}:{} on server {} and current binlog position is {}",
+      log.info("Disconnected from Mysql at {}:{} on server {} and current binlog position is [{}]",
           hostname,
           port,
           client.getServerId(),
@@ -243,7 +243,7 @@ class MysqlBinLogStream {
     }
 
     private void logError(BinaryLogClient client, Exception ex, String description) {
-      log.error("{} Mysql at {}:{} on server {} and current binlog position is {}",
+      log.error("{} Mysql at {}:{} on server {} and current binlog position is [{}]",
           description,
           hostname,
           port,
