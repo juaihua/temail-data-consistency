@@ -60,7 +60,6 @@ class MysqlBinLogStream {
     client.setServerId(serverId);
     client.setGtidSetFallbackToPurged(true);
     client.setGtidSet(binlogSyncRecorder.position());
-    startFromLatestBinlogInitially();
     client.setEventDeserializer(createEventDeserializerOf(TABLE_MAP, EXT_WRITE_ROWS));
     client.registerEventListener(replicationEventListener(eventHandler, errorHandler, tableNameSet));
     client.registerLifecycleListener(new MySqlLifecycleListener(hostname, port, binlogSyncRecorder, errorHandler));
@@ -78,13 +77,6 @@ class MysqlBinLogStream {
       log.info("Disconnected from Mysql at {}:{}", hostname, port);
     } catch (IOException e) {
       log.warn("Failed to disconnect from MySql at {}:{}", hostname, port, e);
-    }
-  }
-
-  private void startFromLatestBinlogInitially() {
-    if (binlogSyncRecorder.position().isEmpty()) {
-      client.setBinlogFilename(null);
-      client.setBinlogPosition(0L);
     }
   }
 

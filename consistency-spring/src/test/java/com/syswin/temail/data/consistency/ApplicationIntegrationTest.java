@@ -117,7 +117,7 @@ public class ApplicationIntegrationTest {
     }).when(mqProducer)
         .send(anyString(), anyString(), anyString(), anyString());
 
-    databasePopulator.addScript(new ClassPathResource("data.sql"));
+    databasePopulator.addScript(new ClassPathResource("test.sql"));
   }
 
   @After
@@ -130,7 +130,7 @@ public class ApplicationIntegrationTest {
 
     DatabasePopulatorUtils.execute(databasePopulator, dataSource);
 
-    waitAtMost(Duration.ONE_SECOND).untilAsserted(() -> assertThat(sentMessages).hasSize(5));
+    waitAtMost(Duration.ONE_MINUTE).untilAsserted(() -> assertThat(sentMessages).hasSize(5));
     assertThat(sentMessages).containsExactly(
         "test1,bob,alice",
         "test2,jack,alice",
@@ -157,17 +157,5 @@ public class ApplicationIntegrationTest {
         "test4,john,bob",
         "test5,lucy,john"
     );
-
-    statefulTask.pause();
-    mysqlBinLogStream.stop();
-    DatabasePopulatorUtils.execute(databasePopulator, dataSource);
-
-    // reset binlog position
-    curator.delete().forPath(recorder.recordPath());
-    statefulTask.resume();
-    Thread.sleep(1000);
-
-    // start from latest binlog, so no new event processed
-    assertThat(sentMessages).hasSize(10);
   }
 }
