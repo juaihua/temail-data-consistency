@@ -7,6 +7,7 @@ import static com.github.shyiko.mysql.binlog.event.deserialization.EventDeserial
 
 import com.github.shyiko.mysql.binlog.BinaryLogClient;
 import com.github.shyiko.mysql.binlog.BinaryLogClient.EventListener;
+import com.github.shyiko.mysql.binlog.BinaryLogClient.LifecycleListener;
 import com.github.shyiko.mysql.binlog.event.Event;
 import com.github.shyiko.mysql.binlog.event.EventType;
 import com.github.shyiko.mysql.binlog.event.TableMapEventData;
@@ -62,6 +63,7 @@ class MysqlBinLogStream {
     startFromLatestBinlogInitially();
     client.setEventDeserializer(createEventDeserializerOf(TABLE_MAP, EXT_WRITE_ROWS));
     client.registerEventListener(replicationEventListener(eventHandler, errorHandler, tableNameSet));
+    client.registerLifecycleListener(new MySqlLifecycleListener(hostname, port, binlogSyncRecorder, errorHandler));
 
     log.info("Connecting to Mysql at {}:{} from binlog [{}]", hostname, port, client.getGtidSet());
     client.connect();
@@ -71,6 +73,7 @@ class MysqlBinLogStream {
     try {
       client.disconnect();
       client.getEventListeners().forEach(client::unregisterEventListener);
+      client.getLifecycleListeners().forEach(client::unregisterLifecycleListener);
       binlogSyncRecorder.flush();
       log.info("Disconnected from Mysql at {}:{}", hostname, port);
     } catch (IOException e) {
@@ -197,6 +200,64 @@ class MysqlBinLogStream {
           Timestamp.from(Instant.ofEpochMilli(((long) columns[5]))),
           Timestamp.from(Instant.ofEpochMilli(((long) columns[6])))
       );
+    }
+  }
+
+  private static class MySqlLifecycleListener implements LifecycleListener {
+
+    private final String hostname;
+    private final int port;
+    private final BinlogSyncRecorder binlogSyncRecorder;
+    private final Consumer<Throwable> errorHandler;
+
+    MySqlLifecycleListener(String hostname,
+        int port,
+        BinlogSyncRecorder binlogSyncRecorder,
+        Consumer<Throwable> errorHandler) {
+
+      this.hostname = hostname;
+      this.port = port;
+      this.binlogSyncRecorder = binlogSyncRecorder;
+      this.errorHandler = errorHandler;
+    }
+
+    @Override
+    public void onConnect(BinaryLogClient client) {
+      log.info("Connected to Mysql at {}:{} on server {} starting from binlog position {}",
+          hostname,
+          port,
+          client.getServerId(),
+          binlogSyncRecorder.position());
+    }
+
+    @Override
+    public void onDisconnect(BinaryLogClient client) {
+      log.info("Disconnected from Mysql at {}:{} on server {} and current binlog position is {}",
+          hostname,
+          port,
+          client.getServerId(),
+          binlogSyncRecorder.position());
+    }
+
+    @Override
+    public void onCommunicationFailure(BinaryLogClient client, Exception ex) {
+      logError(client, ex, "Communication failure with");
+      errorHandler.accept(ex);
+    }
+
+    @Override
+    public void onEventDeserializationFailure(BinaryLogClient client, Exception ex) {
+      logError(client, ex, "Failed to deserialize event from");
+    }
+
+    private void logError(BinaryLogClient client, Exception ex, String description) {
+      log.error("{} Mysql at {}:{} on server {} and current binlog position is {}",
+          description,
+          hostname,
+          port,
+          client.getServerId(),
+          binlogSyncRecorder.position(),
+          ex);
     }
   }
 }
