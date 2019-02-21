@@ -117,7 +117,7 @@ public class ApplicationIntegrationTest {
     }).when(mqProducer)
         .send(anyString(), anyString(), anyString(), anyString());
 
-    databasePopulator.addScript(new ClassPathResource("test.sql"));
+    databasePopulator.addScript(new ClassPathResource("data.sql"));
   }
 
   @After
@@ -127,8 +127,6 @@ public class ApplicationIntegrationTest {
 
   @Test
   public void streamEventsToMq() throws Exception {
-
-    DatabasePopulatorUtils.execute(databasePopulator, dataSource);
 
     waitAtMost(Duration.ONE_MINUTE).untilAsserted(() -> assertThat(sentMessages).hasSize(5));
     assertThat(sentMessages).containsExactly(
