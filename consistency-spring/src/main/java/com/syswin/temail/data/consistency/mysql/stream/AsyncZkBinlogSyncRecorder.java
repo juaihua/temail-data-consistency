@@ -35,7 +35,7 @@ public class AsyncZkBinlogSyncRecorder extends ZkBinlogSyncRecorder {
   }
 
   @Override
-  void start() {
+  public void start() {
     super.start();
     scheduledExecutor.scheduleWithFixedDelay(this::flushIfUpdated, updateIntervalMillis, updateIntervalMillis, MILLISECONDS);
   }
@@ -47,7 +47,7 @@ public class AsyncZkBinlogSyncRecorder extends ZkBinlogSyncRecorder {
   }
 
   @Override
-  void shutdown() {
+  public void shutdown() {
     super.shutdown();
     scheduledExecutor.shutdownNow();
   }

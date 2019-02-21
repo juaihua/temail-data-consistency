@@ -9,4 +9,10 @@ public interface BinlogSyncRecorder {
   String recordPath();
 
   void flush();
+
+  default void start() {
+  }
+
+  default void shutdown() {
+  }
 }

@@ -51,12 +51,6 @@ public abstract class ZkBinlogSyncRecorder implements BinlogSyncRecorder {
     return recordPath;
   }
 
-  void start() {
-  }
-
-  void shutdown() {
-  }
-
   private String binlogPositionString() throws Exception {
     return new String(curator.getData().forPath(recordPath));
   }
