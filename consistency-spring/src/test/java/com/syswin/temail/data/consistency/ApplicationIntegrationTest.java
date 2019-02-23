@@ -155,5 +155,32 @@ public class ApplicationIntegrationTest {
         "test4,john,bob",
         "test5,lucy,john"
     );
+
+    statefulTask.pause();
+    mysqlBinLogStream.stop();
+    DatabasePopulatorUtils.execute(databasePopulator, dataSource);
+    DatabasePopulatorUtils.execute(databasePopulator, dataSource);
+
+    fastForwardGTID(5);
+
+    statefulTask.resume();
+    Thread.sleep(1000);
+
+    // we skipped 5 SQL statements by fast forwarding
+    // and each data changing statement is a transaction in MySQL by default
+    assertThat(sentMessages).hasSize(17);
+  }
+
+  private void fastForwardGTID(int statementsToSkip) {
+    String position = recorder.position();
+    int delimiter = position.indexOf(":");
+    String sequenceRange = position.substring(delimiter);
+    String uuid = position.substring(0, delimiter + 1);
+
+    long lastSeqOfGTID = Long.parseLong(sequenceRange.substring(sequenceRange.indexOf("-") + 1));
+    position = uuid + "1-" + (lastSeqOfGTID + statementsToSkip);
+
+    recorder.record(position);
+    recorder.flush();
   }
 }
