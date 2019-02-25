@@ -5,17 +5,19 @@ import static org.apache.curator.framework.recipes.leader.LeaderLatch.State.CLOS
 
 import java.io.EOFException;
 import java.io.IOException;
+import java.lang.invoke.MethodHandles;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.function.Consumer;
-import lombok.extern.slf4j.Slf4j;
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.recipes.leader.LeaderLatch;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
-@Slf4j
 class ZkBasedStatefulTaskRunner {
+  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   private static final String LEADER_LATCH_PATH_TEMPLATE = ZK_ROOT_PATH + "/%s/leader";
   private final String leaderLatchPath;
