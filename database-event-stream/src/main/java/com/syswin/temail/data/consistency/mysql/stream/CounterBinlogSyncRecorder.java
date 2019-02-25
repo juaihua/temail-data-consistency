@@ -2,13 +2,15 @@ package com.syswin.temail.data.consistency.mysql.stream;
 
 import static java.util.concurrent.TimeUnit.MINUTES;
 
+import java.lang.invoke.MethodHandles;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.atomic.AtomicLong;
-import lombok.extern.slf4j.Slf4j;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
-@Slf4j
 public class CounterBinlogSyncRecorder implements BinlogSyncRecorder {
+  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   private final BinlogSyncRecorder recorder;
   private final AtomicLong recordCounter = new AtomicLong();

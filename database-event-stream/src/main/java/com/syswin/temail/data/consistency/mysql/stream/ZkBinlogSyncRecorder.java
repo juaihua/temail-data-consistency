@@ -2,13 +2,15 @@ package com.syswin.temail.data.consistency.mysql.stream;
 
 import static com.syswin.temail.data.consistency.mysql.stream.ZookeeperPaths.ZK_ROOT_PATH;
 
-import lombok.extern.slf4j.Slf4j;
+import java.lang.invoke.MethodHandles;
 import org.apache.curator.framework.CuratorFramework;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
-@Slf4j
 public abstract class ZkBinlogSyncRecorder implements BinlogSyncRecorder {
+  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
-  private static final String BINLOG_POSITION_PATH_TEMPLATE = ZK_ROOT_PATH + "/%s/position";
+  private static final String BINLOG_POSITION_PATH_TEMPLATE = ZK_ROOT_PATH + "/consistency/%s/position";
   private final String recordPath;
   private final CuratorFramework curator;
 
