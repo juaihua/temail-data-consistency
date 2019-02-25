@@ -90,6 +90,6 @@ class BinlogStreamConfig {
 
     return new CompositeStatefulTask(
         new ScheduledStatefulTask(new ToggleRunnable(featureManager, BINLOG, new EventHousekeeper(eventRepo, limit)), sweepInterval),
-        new BinlogStreamStatefulTask(binLogStream, eventHandler, tableNames));
+        new BinlogStreamStatefulTask(binLogStream, new MysqlEventHandler(eventHandler, tableNames)));
   }
 }

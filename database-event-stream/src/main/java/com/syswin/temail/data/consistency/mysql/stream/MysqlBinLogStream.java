@@ -10,28 +10,20 @@ import com.github.shyiko.mysql.binlog.BinaryLogClient.EventListener;
 import com.github.shyiko.mysql.binlog.BinaryLogClient.LifecycleListener;
 import com.github.shyiko.mysql.binlog.event.Event;
 import com.github.shyiko.mysql.binlog.event.EventType;
-import com.github.shyiko.mysql.binlog.event.TableMapEventData;
-import com.github.shyiko.mysql.binlog.event.WriteRowsEventData;
 import com.github.shyiko.mysql.binlog.event.deserialization.EventDataDeserializer;
 import com.github.shyiko.mysql.binlog.event.deserialization.EventDeserializer;
 import com.github.shyiko.mysql.binlog.event.deserialization.NullEventDataDeserializer;
-import com.syswin.temail.data.consistency.domain.ListenerEvent;
-import com.syswin.temail.data.consistency.domain.SendingMQMessageException;
-import com.syswin.temail.data.consistency.domain.SendingStatus;
 import java.io.IOException;
-import java.io.Serializable;
-import java.sql.Timestamp;
-import java.time.Instant;
+import java.lang.invoke.MethodHandles;
 import java.util.Collections;
 import java.util.HashSet;
-import java.util.List;
 import java.util.Set;
 import java.util.function.Consumer;
-import java.util.stream.Collectors;
-import lombok.extern.slf4j.Slf4j;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
-@Slf4j
 class MysqlBinLogStream {
+  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   private final BinaryLogClient client;
   private final String hostname;
@@ -53,15 +45,12 @@ class MysqlBinLogStream {
     this.client = new BinaryLogClient(hostname, port, username, password);
   }
 
-  void start(EventHandler eventHandler, Consumer<Throwable> errorHandler, String[] tableNames) throws IOException {
-    Set<String> tableNameSet = new HashSet<>();
-    Collections.addAll(tableNameSet, tableNames);
-
+  void start(Consumer<Event> eventHandler, Consumer<Throwable> errorHandler) throws IOException {
     client.setServerId(serverId);
     client.setGtidSetFallbackToPurged(true);
     client.setGtidSet(binlogSyncRecorder.position());
     client.setEventDeserializer(createEventDeserializerOf(TABLE_MAP, EXT_WRITE_ROWS));
-    client.registerEventListener(replicationEventListener(eventHandler, errorHandler, tableNameSet));
+    client.registerEventListener(replicationEventListener(eventHandler, errorHandler));
     client.registerLifecycleListener(new MySqlLifecycleListener(hostname, port, binlogSyncRecorder, errorHandler));
 
     log.info("Connecting to Mysql at {}:{} from binlog [{}]", hostname, port, client.getGtidSet());
@@ -81,12 +70,9 @@ class MysqlBinLogStream {
   }
 
   private BinaryLogClient.EventListener replicationEventListener(
-      EventHandler eventHandler,
-      Consumer<Throwable> errorHandler,
-      Set<String> tableNames) {
-
-    log.debug("Registering event handler for database tables {}", tableNames);
-    return new TableEventListener(eventHandler, errorHandler, tableNames);
+      Consumer<Event> eventHandler,
+      Consumer<Throwable> errorHandler) {
+    return new TableEventListener(eventHandler, errorHandler);
   }
 
   private EventDeserializer createEventDeserializerOf(EventType... includedTypes) {
@@ -112,18 +98,14 @@ class MysqlBinLogStream {
     return eventDeserializer;
   }
 
-  // TODO: 2019/1/30 this class can be separated from binlog stream to reduce coupling, in case of future extension
   private class TableEventListener implements EventListener {
 
-    private final EventHandler eventHandler;
+    private final Consumer<Event> eventConsumer;
     private final Consumer<Throwable> errorHandler;
-    private final Set<String> tableNames;
-    private TableMapEventData eventData;
 
-    TableEventListener(EventHandler eventHandler, Consumer<Throwable> errorHandler, Set<String> tableNames) {
-      this.eventHandler = eventHandler;
+    TableEventListener(Consumer<Event> eventConsumer, Consumer<Throwable> errorHandler) {
+      this.eventConsumer = eventConsumer;
       this.errorHandler = errorHandler;
-      this.tableNames = tableNames;
     }
 
     @Override
@@ -137,61 +119,20 @@ class MysqlBinLogStream {
       }
     }
 
-    // the known GTID set format: master server UUID:sequence_no_range
-    // e.g. 3809c41e-34fb-11e9-a425-0242ac140002:1-4
-    // the last seen GTID is therefore 3809c41e-34fb-11e9-a425-0242ac140002:4
-    private String latestGTID() {
-      return client.getGtidSet();
-    }
-
     private void handleDeserializedEvent(Event event) {
-      if (TABLE_MAP.equals(event.getHeader().getEventType())) {
-        TableMapEventData data = event.getData();
-        if (tableNames.contains(data.getTable())) {
-          log.debug("Processing binlog event: {}", event);
-          eventData = data;
-        }
-      } else if (EXT_WRITE_ROWS.equals(event.getHeader().getEventType()) && eventData != null) {
-        log.debug("Processing binlog event: {}", event);
-        handleInsertEvent(event);
-      }
-    }
-
-    private void handleInsertEvent(Event event) {
-      WriteRowsEventData data = event.getData();
-
-      if (data.getTableId() == eventData.getTableId()) {
-        List<ListenerEvent> listenerEvents = data.getRows()
-            .stream()
-            .map(this::toListenerEvent)
-            .collect(Collectors.toList());
-
-        // listener events are sent in single element collections,
-        // so it's safe to record binlog position once the collection of events is handled
-        handleEvent(eventHandler, errorHandler, listenerEvents);
-      }
-
-      eventData = null;
-    }
-
-    private void handleEvent(EventHandler eventHandler, Consumer<Throwable> errorHandler, List<ListenerEvent> listenerEvents) {
       try {
-        eventHandler.handle(listenerEvents);
-      } catch (SendingMQMessageException e) {
+        eventConsumer.accept(event);
+      } catch (Exception e) {
         errorHandler.accept(e);
         throw e;
       }
     }
 
-    private ListenerEvent toListenerEvent(Serializable[] columns) {
-      return new ListenerEvent(((long) columns[0]),
-          SendingStatus.valueOf(new String((byte[]) columns[1]).toUpperCase()),
-          new String((byte[]) columns[2]),
-          new String((byte[]) columns[3]),
-          new String((byte[]) columns[4]),
-          Timestamp.from(Instant.ofEpochMilli(((long) columns[5]))),
-          Timestamp.from(Instant.ofEpochMilli(((long) columns[6])))
-      );
+    // the known GTID set format: master server UUID:sequence_no_range
+    // e.g. 3809c41e-34fb-11e9-a425-0242ac140002:1-4
+    // the last seen GTID is therefore 3809c41e-34fb-11e9-a425-0242ac140002:4
+    private String latestGTID() {
+      return client.getGtidSet();
     }
   }
 

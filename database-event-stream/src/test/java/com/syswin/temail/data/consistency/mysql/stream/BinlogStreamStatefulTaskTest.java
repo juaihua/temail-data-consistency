@@ -4,6 +4,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.verify;
 
+import com.github.shyiko.mysql.binlog.event.Event;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
@@ -15,12 +16,11 @@ public class BinlogStreamStatefulTaskTest {
 
   private final List<Throwable> exceptions = new ArrayList<>();
   private final Consumer<Throwable> throwableConsumer = exceptions::add;
+  private final Consumer<Event> eventHandler = event -> {};
 
-  private final EventHandler eventHandler = Mockito.mock(EventHandler.class);
   private final MysqlBinLogStream binLogStream = Mockito.mock(MysqlBinLogStream.class);
-  private final String[] tableNames = {};
 
-  private final BinlogStreamStatefulTask task = new BinlogStreamStatefulTask(binLogStream, eventHandler, tableNames);
+  private final BinlogStreamStatefulTask task = new BinlogStreamStatefulTask(binLogStream, eventHandler);
 
   @Test
   public void startUnderlyingStream() throws IOException {
@@ -28,7 +28,7 @@ public class BinlogStreamStatefulTaskTest {
     task.start(throwableConsumer);
 
     assertThat(exceptions).isEmpty();
-    verify(binLogStream).start(eventHandler, throwableConsumer, tableNames);
+    verify(binLogStream).start(eventHandler, throwableConsumer);
   }
 
   @Test
@@ -43,7 +43,7 @@ public class BinlogStreamStatefulTaskTest {
   @Test
   public void handleErrorOnException() throws IOException {
     IOException exception = new IOException("oops");
-    doThrow(exception).when(binLogStream).start(eventHandler, throwableConsumer, tableNames);
+    doThrow(exception).when(binLogStream).start(eventHandler, throwableConsumer);
 
     task.start(throwableConsumer);
 
