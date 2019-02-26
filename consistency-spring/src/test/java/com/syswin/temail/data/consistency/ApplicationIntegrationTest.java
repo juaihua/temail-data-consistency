@@ -177,7 +177,7 @@ public class ApplicationIntegrationTest {
     String sequenceRange = position.substring(delimiter);
     String uuid = position.substring(0, delimiter + 1);
 
-    long lastSeqOfGTID = Long.parseLong(sequenceRange.substring(sequenceRange.indexOf("-") + 1));
+    long lastSeqOfGTID = Long.parseLong(sequenceRange.substring(sequenceRange.lastIndexOf("-") + 1));
     position = uuid + "1-" + (lastSeqOfGTID + statementsToSkip);
 
     recorder.record(position);

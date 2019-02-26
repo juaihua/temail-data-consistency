@@ -1,5 +1,7 @@
 package com.syswin.temail.data.consistency.mysql.stream;
 
+import static com.github.shyiko.mysql.binlog.event.EventType.EXT_WRITE_ROWS;
+import static com.github.shyiko.mysql.binlog.event.EventType.TABLE_MAP;
 import static com.syswin.temail.data.consistency.mysql.stream.DataSyncFeature.BINLOG;
 import static com.syswin.temail.data.consistency.mysql.stream.ApplicationPaths.clusterName;
 
@@ -91,6 +93,6 @@ class BinlogStreamConfig {
 
     return new CompositeStatefulTask(
         new ScheduledStatefulTask(new ToggleRunnable(featureManager, BINLOG, new EventHousekeeper(eventRepo, limit)), sweepInterval),
-        new BinlogStreamStatefulTask(binLogStream, new MysqlEventHandler(eventHandler, tableNames)));
+        new BinlogStreamStatefulTask(binLogStream, new MysqlEventHandler(eventHandler, tableNames), TABLE_MAP, EXT_WRITE_ROWS));
   }
 }
