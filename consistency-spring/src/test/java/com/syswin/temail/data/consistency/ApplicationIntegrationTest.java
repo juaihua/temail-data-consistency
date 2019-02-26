@@ -9,8 +9,8 @@ import com.syswin.temail.data.consistency.StatefulTaskConfig.StoppableStatefulTa
 import com.syswin.temail.data.consistency.application.MQProducer;
 import com.syswin.temail.data.consistency.containers.MysqlContainer;
 import com.syswin.temail.data.consistency.containers.ZookeeperContainer;
-import com.syswin.temail.data.consistency.mysql.stream.BinlogSyncRecorder;
-import com.syswin.temail.data.consistency.mysql.stream.StatefulTask;
+import com.syswin.library.database.event.stream.BinlogSyncRecorder;
+import com.syswin.library.stateful.task.runner.StatefulTask;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.ExecutorService;

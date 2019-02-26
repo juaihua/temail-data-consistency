@@ -2,7 +2,7 @@ package com.syswin.temail.data.consistency;
 
 import static org.assertj.core.api.Assertions.fail;
 
-import com.syswin.temail.data.consistency.mysql.stream.StatefulTask;
+import com.syswin.library.stateful.task.runner.StatefulTask;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Consumer;
 import lombok.extern.slf4j.Slf4j;
