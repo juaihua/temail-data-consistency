@@ -1,16 +1,13 @@
 package com.syswin.temail.data.consistency.mysql.stream;
 
-import static com.github.shyiko.mysql.binlog.event.EventType.EXT_WRITE_ROWS;
-import static com.github.shyiko.mysql.binlog.event.EventType.TABLE_MAP;
 import static com.syswin.temail.data.consistency.mysql.stream.DataSyncFeature.BINLOG;
 import static com.syswin.temail.data.consistency.mysql.stream.ApplicationPaths.clusterName;
 
+import com.syswin.library.database.event.stream.mysql.MysqlBinlogStreamStatefulTaskBuilder;
 import com.syswin.library.database.event.stream.zookeeper.AsyncZkBinlogSyncRecorder;
-import com.syswin.library.database.event.stream.mysql.BinlogStreamStatefulTask;
 import com.syswin.library.database.event.stream.BinlogSyncRecorder;
 import com.syswin.library.database.event.stream.zookeeper.BlockingZkBinlogSyncRecorder;
 import com.syswin.library.database.event.stream.CounterBinlogSyncRecorder;
-import com.syswin.library.database.event.stream.mysql.MysqlBinLogStream;
 import com.syswin.library.stateful.task.runner.CompositeStatefulTask;
 import com.syswin.library.stateful.task.runner.ScheduledStatefulTask;
 import com.syswin.library.stateful.task.runner.StatefulTask;
@@ -93,15 +90,18 @@ class BinlogStreamConfig {
         .split(":");
 
     serverId = serverId == 0 ? random.nextInt(Integer.MAX_VALUE) + 1 : serverId;
-    MysqlBinLogStream binLogStream = new MysqlBinLogStream(databaseUrl[0],
-        Integer.parseInt(databaseUrl[1]),
-        username,
-        password,
-        serverId,
-        binlogSyncRecorder);
+    StatefulTask binlogStreamStatefulTask = new MysqlBinlogStreamStatefulTaskBuilder()
+        .hostname(databaseUrl[0])
+        .port(Integer.parseInt(databaseUrl[1]))
+        .username(username)
+        .password(password)
+        .serverId(serverId)
+        .binlogSyncRecorder(binlogSyncRecorder)
+        .databaseEventHandler(new MysqlEventHandler(eventHandler, tableNames))
+        .build();
 
     return new CompositeStatefulTask(
         new ScheduledStatefulTask(new ToggleRunnable(featureManager, BINLOG, new EventHousekeeper(eventRepo, limit)), sweepInterval),
-        new BinlogStreamStatefulTask(binLogStream, new MysqlEventHandler(eventHandler, tableNames), TABLE_MAP, EXT_WRITE_ROWS));
+        binlogStreamStatefulTask);
   }
 }
