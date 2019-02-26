@@ -1,6 +1,7 @@
 package com.syswin.temail.data.consistency.mysql.stream;
 
 import static com.syswin.temail.data.consistency.mysql.stream.DataSyncFeature.BINLOG;
+import static com.syswin.temail.data.consistency.mysql.stream.ApplicationPaths.clusterName;
 
 import com.syswin.temail.data.consistency.application.MQProducer;
 import com.syswin.temail.data.consistency.domain.ListenerEventRepo;
@@ -43,14 +44,14 @@ class BinlogStreamConfig {
   BinlogSyncRecorder asyncBinlogSyncRecorder(CuratorFramework curator,
       @Value("${app.consistency.binlog.update.interval:200}") long updateIntervalMillis) {
     log.info("Starting with async binlog recorder");
-    return new CounterBinlogSyncRecorder(new AsyncZkBinlogSyncRecorder(clusterName, curator, updateIntervalMillis));
+    return new CounterBinlogSyncRecorder(new AsyncZkBinlogSyncRecorder(clusterName(clusterName), curator, updateIntervalMillis));
   }
 
   @ConditionalOnProperty(value = "app.consistency.binlog.update.mode", havingValue = "blocking")
   @Bean(initMethod = "start", destroyMethod = "shutdown")
   BinlogSyncRecorder blockingBinlogSyncRecorder(CuratorFramework curator) {
     log.info("Starting with blocking binlog recorder");
-    return new CounterBinlogSyncRecorder(new BlockingZkBinlogSyncRecorder(clusterName, curator));
+    return new CounterBinlogSyncRecorder(new BlockingZkBinlogSyncRecorder(clusterName(clusterName), curator));
   }
 
   @Bean

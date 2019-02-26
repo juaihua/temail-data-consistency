@@ -1,5 +1,7 @@
 package com.syswin.temail.data.consistency.mysql.stream;
 
+import static com.syswin.temail.data.consistency.mysql.stream.ApplicationPaths.clusterName;
+
 import org.apache.curator.framework.CuratorFramework;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
@@ -14,6 +16,6 @@ class StatefulTaskRunnerConfig {
       @Value("${app.consistency.binlog.participant.id}") String participantId,
       StatefulTask task,
       CuratorFramework curator) {
-    return new ZkBasedStatefulTaskRunner(clusterName, participantId, task, curator);
+    return new ZkBasedStatefulTaskRunner(clusterName(clusterName), participantId, task, curator);
   }
 }
