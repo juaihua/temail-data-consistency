@@ -1,5 +1,7 @@
 package com.syswin.temail.data.consistency.mysql.stream;
 
+import static com.github.shyiko.mysql.binlog.event.EventType.EXT_WRITE_ROWS;
+import static com.github.shyiko.mysql.binlog.event.EventType.TABLE_MAP;
 import static com.syswin.temail.data.consistency.mysql.stream.DataSyncFeature.BINLOG;
 import static com.syswin.temail.data.consistency.mysql.stream.ApplicationPaths.clusterName;
 
@@ -98,6 +100,7 @@ class BinlogStreamConfig {
         .serverId(serverId)
         .binlogSyncRecorder(binlogSyncRecorder)
         .databaseEventHandler(new MysqlEventHandler(eventHandler, tableNames))
+        .addEventTypes(TABLE_MAP, EXT_WRITE_ROWS)
         .build();
 
     return new CompositeStatefulTask(
