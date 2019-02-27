@@ -105,7 +105,7 @@
       <artifactId>rocketmq-client</artifactId>
     </dependency>
     <dependency>
-      <groupId>com.syswin.temail</groupId>
+      <groupId>com.syswin.library</groupId>
       <artifactId>database-event-stream</artifactId>
     </dependency>
     <dependency>
