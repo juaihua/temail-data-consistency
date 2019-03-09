@@ -2,14 +2,14 @@ package com.syswin.temail.data.consistency.mysql.stream;
 
 import static com.github.shyiko.mysql.binlog.event.EventType.EXT_WRITE_ROWS;
 import static com.github.shyiko.mysql.binlog.event.EventType.TABLE_MAP;
-import static com.syswin.temail.data.consistency.mysql.stream.DataSyncFeature.BINLOG;
 import static com.syswin.temail.data.consistency.mysql.stream.ApplicationPaths.clusterName;
+import static com.syswin.temail.data.consistency.mysql.stream.DataSyncFeature.BINLOG;
 
+import com.syswin.library.database.event.stream.BinlogSyncRecorder;
+import com.syswin.library.database.event.stream.CounterBinlogSyncRecorder;
 import com.syswin.library.database.event.stream.mysql.MysqlBinlogStreamStatefulTaskBuilder;
 import com.syswin.library.database.event.stream.zookeeper.AsyncZkBinlogSyncRecorder;
-import com.syswin.library.database.event.stream.BinlogSyncRecorder;
 import com.syswin.library.database.event.stream.zookeeper.BlockingZkBinlogSyncRecorder;
-import com.syswin.library.database.event.stream.CounterBinlogSyncRecorder;
 import com.syswin.library.stateful.task.runner.CompositeStatefulTask;
 import com.syswin.library.stateful.task.runner.ScheduledStatefulTask;
 import com.syswin.library.stateful.task.runner.StatefulTask;
@@ -93,6 +93,7 @@ class BinlogStreamConfig {
 
     serverId = serverId == 0 ? random.nextInt(Integer.MAX_VALUE) + 1 : serverId;
     StatefulTask binlogStreamStatefulTask = new MysqlBinlogStreamStatefulTaskBuilder()
+        .dataSource(dataSource)
         .hostname(databaseUrl[0])
         .port(Integer.parseInt(databaseUrl[1]))
         .username(username)
