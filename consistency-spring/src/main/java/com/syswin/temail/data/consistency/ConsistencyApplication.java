@@ -3,11 +3,12 @@ package com.syswin.temail.data.consistency;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
+import org.springframework.boot.web.servlet.support.SpringBootServletInitializer;
 import org.springframework.context.annotation.PropertySource;
 
 @SpringBootApplication
 @PropertySource("classpath:toggle.properties")
-public class ConsistencyApplication implements CommandLineRunner{
+public class ConsistencyApplication extends SpringBootServletInitializer implements CommandLineRunner{
 
   public static void main(String[] args) {
     SpringApplication.run(ConsistencyApplication.class,args);
