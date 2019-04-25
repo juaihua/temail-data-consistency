@@ -1,16 +1,17 @@
 package com.syswin.temail.data.consistency;
 
+import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.awaitility.Awaitility.waitAtMost;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.doAnswer;
 
+import com.syswin.library.database.event.stream.BinlogSyncRecorder;
+import com.syswin.library.stateful.task.runner.StatefulTask;
 import com.syswin.temail.data.consistency.StatefulTaskConfig.StoppableStatefulTask;
 import com.syswin.temail.data.consistency.application.MQProducer;
 import com.syswin.temail.data.consistency.containers.MysqlContainer;
 import com.syswin.temail.data.consistency.containers.ZookeeperContainer;
-import com.syswin.library.database.event.stream.BinlogSyncRecorder;
-import com.syswin.library.stateful.task.runner.StatefulTask;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.ExecutorService;
@@ -164,11 +165,10 @@ public class ApplicationIntegrationTest {
     fastForwardGTID(5);
 
     statefulTask.resume();
-    Thread.sleep(1000);
 
     // we skipped 5 SQL statements by fast forwarding
     // and each data changing statement is a transaction in MySQL by default
-    assertThat(sentMessages).hasSize(17);
+    waitAtMost(2, SECONDS).untilAsserted(() -> assertThat(sentMessages).hasSize(17));
   }
 
   private void fastForwardGTID(int statementsToSkip) {
