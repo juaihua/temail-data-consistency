@@ -57,7 +57,7 @@ public class MqEventSenderTest {
   @SuppressWarnings("unchecked")
   @Test
   public void retryFailedEventsWhenMqOutOfOrder() throws Exception {
-    doThrow(RemotingException.class, MQClientException.class, MQBrokerException.class)
+    doThrow(RemotingException.class, MQBrokerException.class)
         .doNothing()
         .when(mqProducer)
         .send(anyString(), anyString(), anyString(), anyString());
@@ -112,11 +112,12 @@ public class MqEventSenderTest {
   }
 
   @Test(timeout = 2000L)
-  public void skipSendingEventsWhenUnsupportedEncoding() throws Exception {
-    doThrow(UnsupportedEncodingException.class)
+  public void skipSendingInvalidEvents() throws Exception {
+    doThrow(UnsupportedEncodingException.class, MQClientException.class)
         .when(mqProducer)
         .send(anyString(), anyString(), anyString(), anyString());
 
+    sender.handle(listenerEvents);
     sender.handle(listenerEvents);
 
     assertThat(sentMessages).isEmpty();

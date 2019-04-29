@@ -36,7 +36,7 @@ public class MqEventSender implements EventHandler {
         log.debug("Sending event to MQ: {}", listenerEvent);
         mqProducer.send(listenerEvent.getContent(), listenerEvent.getTopic(), listenerEvent.getTag(), listenerEvent.key());
         return;
-      } catch (RemotingException | MQClientException | MQBrokerException e) {
+      } catch (RemotingException | MQBrokerException e) {
         log.error("Failed to send listener event by MQ and will retry: {}", listenerEvent, e);
         if (i == maxRetries) {
           throw new SendingMQMessageException("Failed to send listener event by MQ after retrying " + maxRetries + " times", e);
@@ -47,8 +47,8 @@ public class MqEventSender implements EventHandler {
         sleep(listenerEvent);
       } catch (InterruptedException e) {
         onInterruption(listenerEvent, e);
-      } catch (UnsupportedEncodingException e) {
-        log.error("Failed to send listener event by MQ due to unsupported encoding: {}", listenerEvent, e);
+      } catch (UnsupportedEncodingException | MQClientException e) {
+        log.error("Failed to send listener event by MQ: {}", listenerEvent, e);
         return;
       }
     }
