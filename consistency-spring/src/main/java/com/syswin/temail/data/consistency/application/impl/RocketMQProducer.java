@@ -72,8 +72,7 @@ public class RocketMQProducer implements MQProducer{
       throws MQClientException, RemotingException, MQBrokerException, InterruptedException {
 
     return producer.send(message, (queues, msg, arg) -> {
-        int hash = Math.abs(arg.hashCode());
-        int index = hash % queues.size();
+      int index = Math.abs(arg.hashCode() % queues.size());
         return queues.get(index);
       }, tag);
   }
