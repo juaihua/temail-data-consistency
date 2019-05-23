@@ -26,8 +26,4 @@ public class ListenerEventRepoImpl implements ListenerEventRepo {
     return eventMapper.deleteById(id);
   }
 
-  @Override
-  public int batchDelete(int limit) {
-    return eventMapper.batchDelete(limit);
-  }
 }

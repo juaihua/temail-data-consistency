@@ -8,5 +8,4 @@ public interface ListenerEventRepo {
 
   int delete(long id);
 
-  int batchDelete(int limit);
 }
