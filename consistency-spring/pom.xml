@@ -52,6 +52,10 @@
       <artifactId>spring-boot-starter-log4j2</artifactId>
     </dependency>
     <dependency>
+      <groupId>com.zaxxer</groupId>
+      <artifactId>HikariCP</artifactId>
+    </dependency>
+    <dependency>
       <groupId>com.systoon.integration</groupId>
       <artifactId>disconf-spring-boot-starter</artifactId>
       <version>1.0.0</version>
