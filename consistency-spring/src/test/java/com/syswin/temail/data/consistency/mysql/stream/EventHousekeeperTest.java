@@ -2,7 +2,6 @@ package com.syswin.temail.data.consistency.mysql.stream;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import com.syswin.temail.data.consistency.application.ListenerEventService;
 import com.syswin.temail.data.consistency.application.MQProducer;
 import com.syswin.temail.data.consistency.containers.MysqlContainer;
 import com.syswin.temail.data.consistency.domain.ListenerEvent;
@@ -46,9 +45,6 @@ public class EventHousekeeperTest {
 
   @MockBean
   private MQProducer mqProducer;
-
-  @MockBean
-  private ListenerEventService listenerEventService;
 
   @Autowired
   private ListenerEventRepo listenerEventRepo;

@@ -12,5 +12,4 @@ public interface ListenerEventMapper {
 
   int deleteById(long id);
 
-  int batchDelete(int limit);
 }

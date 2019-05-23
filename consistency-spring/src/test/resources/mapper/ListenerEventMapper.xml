@@ -19,8 +19,4 @@
     </if>
     limit 0,200
   </select>
-  <update id="updateStatusById">
-    update listener_event set status=#{status,jdbcType=VARCHAR}
-    where id=#{id}
-  </update>
 </mapper>
