@@ -24,6 +24,12 @@ import org.testcontainers.containers.Network;
     "spring.autoconfigure.exclude[0]=com.systoon.integration.spring.boot.disconf.DisconfAutoConfiguration",
     "spring.autoconfigure.exclude[1]=com.systoon.integration.spring.boot.disconf.context.config.ConfigurationPropertiesRebinderAutoConfiguration",
     "spring.autoconfigure.exclude[2]=com.systoon.integration.spring.boot.disconf.context.config.RefreshAutoConfiguration",
+    "spring.autoconfigure.exclude[3]=com.syswin.library.database.event.stream.mysql.DataSourceContainer",
+    "spring.autoconfigure.exclude[4]=com.syswin.library.database.event.stream.mysql.StatefulTaskComposerConfig",
+    "spring.autoconfigure.exclude[5]=com.syswin.library.database.event.stream.mysql.DefaultMultiDataSourceConfig",
+    "spring.autoconfigure.exclude[6]=com.syswin.library.database.event.stream.zookeeper.DefaultCuratorConfig",
+    "spring.autoconfigure.exclude[7]=com.syswin.library.database.event.stream.mysql.DefaultBinlogStreamConfig",
+    "spring.autoconfigure.exclude[8]=com.syswin.library.database.event.stream.DefaultStatefulTaskRunnerConfig",
     "spring.datasource.username=root",
     "spring.datasource.password=password"
 })

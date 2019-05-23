@@ -30,11 +30,20 @@ app:
       max-pool-size: 10
       queue-capacity: 20
     binlog:
-      participant:
-        id: watcher
-      zk.address: localhost:2181
-      update.mode: blocking
       housekeeper.sweep.interval: 1000
+
+library.database.stream:
+  participant.id: watcher
+  zk.address: localhost:2181
+  update.mode: blocking
+  multi:
+    enabled: true
+    contexts:
+    - datasource:
+        url: jdbc:mysql://localhost:3316/consistency?useSSL=false
+        username: root
+        password: password
+      cluster.name: consistency
 
 mybatis:
   mapper-locations: classpath*:mapper/*Mapper.xml

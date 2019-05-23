@@ -1,25 +1,16 @@
 package com.syswin.temail.data.consistency;
 
-import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.awaitility.Awaitility.waitAtMost;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.doAnswer;
 
-import com.syswin.library.database.event.stream.BinlogSyncRecorder;
-import com.syswin.library.stateful.task.runner.StatefulTask;
-import com.syswin.temail.data.consistency.StatefulTaskConfig.StoppableStatefulTask;
 import com.syswin.temail.data.consistency.application.MQProducer;
 import com.syswin.temail.data.consistency.containers.MysqlContainer;
 import com.syswin.temail.data.consistency.containers.ZookeeperContainer;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import javax.sql.DataSource;
-import org.apache.curator.framework.CuratorFramework;
 import org.awaitility.Duration;
-import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.BeforeClass;
@@ -27,24 +18,22 @@ import org.junit.ClassRule;
 import org.junit.Test;
 import org.junit.rules.RuleChain;
 import org.junit.runner.RunWith;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.core.io.ClassPathResource;
-import org.springframework.jdbc.datasource.init.DatabasePopulatorUtils;
 import org.springframework.jdbc.datasource.init.ResourceDatabasePopulator;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.junit4.SpringRunner;
 import org.testcontainers.containers.Network;
 
 @RunWith(SpringRunner.class)
-@SpringBootTest(classes = {TestApplication.class, StatefulTaskConfig.class}, properties = {
+@SpringBootTest(classes = {TestApplication.class}, properties = {
     "togglz.features.POLL.enabled=false",
     "togglz.features.BINLOG.enabled=true",
     "spring.autoconfigure.exclude[0]=com.systoon.integration.spring.boot.disconf.DisconfAutoConfiguration",
     "spring.autoconfigure.exclude[1]=com.systoon.integration.spring.boot.disconf.context.config.ConfigurationPropertiesRebinderAutoConfiguration",
     "spring.autoconfigure.exclude[2]=com.systoon.integration.spring.boot.disconf.context.config.RefreshAutoConfiguration",
+    "library.database.stream.participant.id=1",
     "spring.datasource.username=root",
     "spring.datasource.password=password"
 })
@@ -75,39 +64,29 @@ public class ApplicationIntegrationTest {
   @MockBean
   private MQProducer mqProducer;
 
-  private final ExecutorService executor = Executors.newSingleThreadExecutor();
-
-  @Autowired
-  private DataSource dataSource;
-
-  @Autowired
-  private StatefulTask mysqlBinLogStream;
-
-  @Autowired
-  private CuratorFramework curator;
-
-  @Autowired
-  private StoppableStatefulTask statefulTask;
-
-  @Autowired
-  private BinlogSyncRecorder recorder;
-
-  @Value("${app.consistency.cluster.name}")
-  private String clusterName;
-
   @BeforeClass
   public static void beforeClass() {
-    System.setProperty("spring.datasource.url",
-        "jdbc:mysql://" + mysql.getContainerIpAddress() + ":" + mysql.getMappedPort(3306) + "/consistency?useSSL=false");
+    String dbUrl = "jdbc:mysql://" + mysql.getContainerIpAddress() + ":" + mysql.getMappedPort(3306) + "/consistency?useSSL=false";
+    System.setProperty("library.database.stream.multi.contexts[0].datasource.url", dbUrl);
+    System.setProperty("library.database.stream.multi.contexts[0].datasource.username", "root");
+    System.setProperty("library.database.stream.multi.contexts[0].datasource.password", "password");
+    System.setProperty("library.database.stream.multi.contexts[0].cluster.name", "consistency");
 
-    System.setProperty("app.consistency.binlog.zk.address",
+    System.setProperty("spring.datasource.url", dbUrl);
+
+    System.setProperty("library.database.stream.zk.address",
         zookeeper.getContainerIpAddress() + ":" + zookeeper.getMappedPort(2181));
   }
 
   @AfterClass
   public static void afterClass() {
+    System.clearProperty("library.database.stream.multi.contexts[0].url");
+    System.clearProperty("library.database.stream.multi.contexts[0].datasource.username");
+    System.clearProperty("library.database.stream.multi.contexts[0].datasource.password");
+    System.clearProperty("library.database.stream.multi.contexts[0].cluster.name");
+
     System.clearProperty("spring.datasource.url");
-    System.clearProperty("app.consistency.binlog.zk.address");
+    System.clearProperty("library.database.stream.zk.address");
   }
 
   @Before
@@ -121,13 +100,8 @@ public class ApplicationIntegrationTest {
     databasePopulator.addScript(new ClassPathResource("data.sql"));
   }
 
-  @After
-  public void tearDown() {
-    executor.shutdownNow();
-  }
-
   @Test
-  public void streamEventsToMq() throws Exception {
+  public void streamEventsToMq() {
 
     waitAtMost(Duration.ONE_MINUTE).untilAsserted(() -> assertThat(sentMessages).hasSize(5));
     assertThat(sentMessages).containsExactly(
@@ -137,50 +111,5 @@ public class ApplicationIntegrationTest {
         "test4,john,bob",
         "test5,lucy,john"
     );
-
-    // simulate network interruption
-    mysqlBinLogStream.stop();
-    DatabasePopulatorUtils.execute(databasePopulator, dataSource);
-
-    // resume for last known position
-    waitAtMost(Duration.ONE_SECOND).untilAsserted(() -> assertThat(sentMessages).hasSize(10));
-    assertThat(sentMessages).containsExactly(
-        "test1,bob,alice",
-        "test2,jack,alice",
-        "test3,bob,jack",
-        "test4,john,bob",
-        "test5,lucy,john",
-        "test1,bob,alice",
-        "test2,jack,alice",
-        "test3,bob,jack",
-        "test4,john,bob",
-        "test5,lucy,john"
-    );
-
-    statefulTask.pause();
-    mysqlBinLogStream.stop();
-    DatabasePopulatorUtils.execute(databasePopulator, dataSource);
-    DatabasePopulatorUtils.execute(databasePopulator, dataSource);
-
-    fastForwardGTID(5);
-
-    statefulTask.resume();
-
-    // we skipped 5 SQL statements by fast forwarding
-    // and each data changing statement is a transaction in MySQL by default
-    waitAtMost(2, SECONDS).untilAsserted(() -> assertThat(sentMessages).hasSize(17));
-  }
-
-  private void fastForwardGTID(int statementsToSkip) {
-    String position = recorder.position();
-    int delimiter = position.indexOf(":");
-    String sequenceRange = position.substring(delimiter);
-    String uuid = position.substring(0, delimiter + 1);
-
-    long lastSeqOfGTID = Long.parseLong(sequenceRange.substring(sequenceRange.lastIndexOf("-") + 1));
-    position = uuid + "1-" + (lastSeqOfGTID + statementsToSkip);
-
-    recorder.record(position);
-    recorder.flush();
   }
 }
