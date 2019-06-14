@@ -56,28 +56,6 @@
       <artifactId>HikariCP</artifactId>
     </dependency>
     <dependency>
-      <groupId>com.systoon.integration</groupId>
-      <artifactId>disconf-spring-boot-starter</artifactId>
-      <version>1.0.0</version>
-      <exclusions>
-        <exclusion>
-          <groupId>org.apache.zookeeper</groupId>
-          <artifactId>zookeeper</artifactId>
-        </exclusion>
-      </exclusions>
-    </dependency>
-    <dependency>
-      <groupId>com.baidu.disconf</groupId>
-      <artifactId>disconf-client</artifactId>
-      <version>2.6.36</version>
-      <exclusions>
-        <exclusion>
-          <groupId>org.apache.zookeeper</groupId>
-          <artifactId>zookeeper</artifactId>
-        </exclusion>
-      </exclusions>
-    </dependency>
-    <dependency>
       <groupId>mysql</groupId>
       <artifactId>mysql-connector-java</artifactId>
     </dependency>
@@ -155,6 +133,11 @@
         <dependency>
           <groupId>org.springframework.boot</groupId>
           <artifactId>spring-boot-starter-web</artifactId>
+        </dependency>
+        <dependency>
+          <groupId>com.syswin.framework</groupId>
+          <artifactId>syswin-apollo-client</artifactId>
+          <version>1.0.0</version>
         </dependency>
       </dependencies>
       <build>
