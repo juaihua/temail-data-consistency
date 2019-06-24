@@ -1,7 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<project xmlns="http://maven.apache.org/POM/4.0.0"
-  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-  xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
   <modelVersion>4.0.0</modelVersion>
   <groupId>com.syswin.temail</groupId>
   <artifactId>temail-data-consistency-integration</artifactId>
@@ -11,7 +9,16 @@
     <module>consistency-spring</module>
     <module>consistency-sdk</module>
   </modules>
+
+  <scm>
+    <connection>scm:git:${project.git.url}/temail-data-consistency.git</connection>
+    <developerConnection>scm:git:${project.git.url}/temail-data-consistency.git</developerConnection>
+    <url>${project.git.url}/consistency</url>
+    <tag>${project.version}</tag>
+  </scm>
+
   <properties>
+    <project.git.url>http://172.28.4.12/java_temail</project.git.url>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
     <java.version>1.8</java.version>
@@ -189,6 +196,16 @@
             </goals>
           </execution>
         </executions>
+      </plugin>
+      <plugin>
+        <artifactId>maven-release-plugin</artifactId>
+        <dependencies>
+          <dependency>
+            <groupId>org.apache.maven.scm</groupId>
+            <artifactId>maven-scm-provider-gitexe</artifactId>
+            <version>1.8.1</version>
+          </dependency>
+        </dependencies>
       </plugin>
     </plugins>
   </build>
