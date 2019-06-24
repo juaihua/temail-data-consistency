@@ -4,7 +4,7 @@
   <groupId>com.syswin.temail</groupId>
   <artifactId>temail-data-consistency-integration</artifactId>
   <packaging>pom</packaging>
-  <version>1.1.3</version>
+  <version>1.1.4-SNAPSHOT</version>
   <modules>
     <module>consistency-spring</module>
     <module>consistency-sdk</module>
@@ -14,7 +14,7 @@
     <connection>scm:git:${project.git.url}/temail-data-consistency.git</connection>
     <developerConnection>scm:git:${project.git.url}/temail-data-consistency.git</developerConnection>
     <url>${project.git.url}/consistency</url>
-    <tag>v1.1.3</tag>
+    <tag>${project.version}</tag>
   </scm>
 
   <properties>
