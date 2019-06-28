@@ -22,33 +22,12 @@
  * SOFTWARE.
  */
 
-package com.syswin.temail.data.consistency.domain;
+package com.syswin.temail.data.consistency;
 
-import java.sql.Timestamp;
-import lombok.AllArgsConstructor;
-import lombok.Getter;
-import lombok.NonNull;
-import lombok.RequiredArgsConstructor;
-import lombok.ToString;
+import org.mybatis.spring.annotation.MapperScan;
+import org.springframework.context.annotation.Configuration;
 
-@Getter
-@AllArgsConstructor
-@RequiredArgsConstructor
-public class ListenerEvent {
-  private long id;
-  @NonNull
-  private SendingStatus status;
-  @NonNull
-  @ToString.Exclude
-  private String content;
-  @NonNull
-  private String topic;
-  @NonNull
-  private String tag;
-  private Timestamp createTime;
-  private Timestamp updateTime;
-
-  public String key(){
-    return new StringBuilder().append(topic).append("%").append(tag).toString();
-  }
+@Configuration
+@MapperScan(basePackages = {"com.syswin.temail.data.consistency.infrastructure"})
+class MybatisConfiguration {
 }
