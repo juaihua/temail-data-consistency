@@ -26,12 +26,10 @@ package com.syswin.temail.data.consistency.domain;
 
 import java.sql.Timestamp;
 import lombok.AllArgsConstructor;
-import lombok.Getter;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 import lombok.ToString;
 
-@Getter
 @AllArgsConstructor
 @RequiredArgsConstructor
 public class ListenerEvent {
@@ -50,5 +48,17 @@ public class ListenerEvent {
 
   public String key(){
     return new StringBuilder().append(topic).append("%").append(tag).toString();
+  }
+
+  public String getContent() {
+    return content;
+  }
+
+  public String getTopic() {
+    return topic;
+  }
+
+  public String getTag() {
+    return tag;
   }
 }

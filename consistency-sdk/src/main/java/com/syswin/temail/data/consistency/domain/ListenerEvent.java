@@ -25,22 +25,20 @@
 package com.syswin.temail.data.consistency.domain;
 
 import java.sql.Timestamp;
-import lombok.NonNull;
-import lombok.RequiredArgsConstructor;
-import lombok.ToString;
 
-@RequiredArgsConstructor
 public class ListenerEvent {
   private long id;
-  @NonNull
-  private SendingStatus status;
-  @NonNull
-  @ToString.Exclude
-  private String content;
-  @NonNull
-  private String topic;
-  @NonNull
-  private String tag;
+  private final SendingStatus status;
+  private final String content;
+  private final String topic;
+  private final String tag;
   private Timestamp createTime;
   private Timestamp updateTime;
+
+  public ListenerEvent(SendingStatus status, String message, String topic, String tag) {
+    this.status = status;
+    this.content = message;
+    this.topic = topic;
+    this.tag = tag;
+  }
 }
