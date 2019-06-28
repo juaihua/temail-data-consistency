@@ -39,6 +39,6 @@ public class ConsistencyApplication extends SpringBootServletInitializer impleme
   }
 
   @Override
-  public void run(String... args) throws Exception {
+  public void run(String... args) {
   }
 }

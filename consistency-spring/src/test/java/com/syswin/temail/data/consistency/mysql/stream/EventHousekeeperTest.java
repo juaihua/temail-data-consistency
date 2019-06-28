@@ -28,10 +28,11 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import com.syswin.temail.data.consistency.application.MQProducer;
 import com.syswin.temail.data.consistency.containers.MysqlContainer;
-import com.syswin.temail.data.consistency.domain.ListenerEvent;
-import com.syswin.temail.data.consistency.domain.ListenerEventRepo;
 import com.syswin.temail.data.consistency.infrastructure.DbTestApplication;
-import java.util.List;
+import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
 import javax.sql.DataSource;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
@@ -71,9 +72,6 @@ public class EventHousekeeperTest {
   private MQProducer mqProducer;
 
   @Autowired
-  private ListenerEventRepo listenerEventRepo;
-
-  @Autowired
   private DataSource dataSource;
 
   @BeforeClass
@@ -88,14 +86,24 @@ public class EventHousekeeperTest {
   }
 
   @Test
-  public void batchDelete() {
-    List<ListenerEvent> events = listenerEventRepo.findReadyToSend("bob");
-    assertThat(events).hasSize(2);
+  public void batchDelete() throws SQLException {
+    expectRowsInDb("bob", true, 2);
 
     EventHousekeeper housekeeper = new EventHousekeeper(dataSource, 50);
     housekeeper.run();
 
-    events = listenerEventRepo.findReadyToSend("bob");
-    assertThat(events).isEmpty();
+    expectRowsInDb("bob", false, 0);
+  }
+
+  private void expectRowsInDb(String topic, boolean hasRows, int count) throws SQLException {
+    try (Connection connection = dataSource.getConnection()) {
+      try (PreparedStatement statement = connection.prepareStatement("select topic, tag, content from listener_event where topic = ?")) {
+        statement.setString(1, topic);
+        try (ResultSet resultSet = statement.executeQuery()) {
+          assertThat(resultSet.last()).isEqualTo(hasRows);
+          assertThat(resultSet.getRow()).isEqualTo(count);
+        }
+      }
+    }
   }
 }
