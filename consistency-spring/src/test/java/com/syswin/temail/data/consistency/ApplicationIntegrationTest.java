@@ -64,8 +64,7 @@ import org.testcontainers.containers.Network;
     "spring.autoconfigure.exclude[1]=com.systoon.integration.spring.boot.disconf.context.config.ConfigurationPropertiesRebinderAutoConfiguration",
     "spring.autoconfigure.exclude[2]=com.systoon.integration.spring.boot.disconf.context.config.RefreshAutoConfiguration",
     "library.database.stream.participant.id=1",
-    "library.database.stream.multi.enabled=false",
-    "library.database.stream.election.enabled=true",
+    "library.database.stream.multi.enabled=true",
     "library.database.stream.cluster.name=dev",
     "library.messaging.rocketmq.enabled=true",
     "app.consistency.binlog.housekeeper.sweep.interval=60000",
@@ -199,7 +198,7 @@ public class ApplicationIntegrationTest {
   public void streamEventsToMq() {
 
     waitAtMost(Duration.TWO_MINUTES).untilAsserted(() -> assertThat(sentMessages).hasSize(5));
-    assertThat(sentMessages).containsExactly(
+    assertThat(sentMessages).containsExactlyInAnyOrder(
         "test1,bob,alice",
         "test2,jack,alice",
         "test3,bob,jack",

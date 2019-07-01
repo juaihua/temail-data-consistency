@@ -40,6 +40,7 @@ import static org.mockito.Mockito.verify;
 import com.syswin.library.messaging.MessageBrokerException;
 import com.syswin.library.messaging.MessageClientException;
 import com.syswin.library.messaging.MessageDeliverException;
+import com.syswin.library.messaging.MessagingException;
 import com.syswin.library.messaging.MqProducer;
 import com.syswin.temail.data.consistency.application.MQProducer;
 import com.syswin.temail.data.consistency.domain.ListenerEvent;
@@ -55,9 +56,24 @@ public class MqEventSenderTest {
 
   private final List<String> sentMessages = new ArrayList<>();
   private final MqProducer mqProducer = Mockito.mock(MqProducer.class);
-  private final MQProducer compositeMqProducer = (body, topic, tags, keys) -> {
-    mqProducer.send(body, topic, tags, keys);
-    sentMessages.add(body + "," + topic + "," + tags);
+  private final AtomicBoolean started = new AtomicBoolean();
+  private final MQProducer compositeMqProducer = new MQProducer() {
+    @Override
+    public void start() {
+      started.set(true);
+    }
+
+    @Override
+    public void stop() {
+      started.set(false);
+    }
+
+    @Override
+    public void send(String body, String topic, String tags, String keys)
+        throws UnsupportedEncodingException, InterruptedException, MessagingException {
+      mqProducer.send(body, topic, tags, keys);
+      sentMessages.add(body + "," + topic + "," + tags);
+    }
   };
 
   private final int maxRetries = 3;
@@ -65,6 +81,15 @@ public class MqEventSenderTest {
   private final ListenerEvent listenerEvent1 = new ListenerEvent(NEW, "foo", "private", "aaa");
   private final ListenerEvent listenerEvent2 = new ListenerEvent(NEW, "bar", "private", "bbb");
   private final List<ListenerEvent> listenerEvents = asList(listenerEvent1, listenerEvent2);
+
+  @Test
+  public void startUnderlyingMqProducer() {
+    sender.start();
+    assertThat(started).isTrue();
+
+    sender.stop();
+    assertThat(started).isFalse();
+  }
 
   @Test
   public void sendEvent() throws Exception {
