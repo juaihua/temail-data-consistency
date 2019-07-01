@@ -24,25 +24,32 @@
 
 package com.syswin.temail.data.consistency.mysql.stream;
 
+import com.syswin.library.messaging.MessagingException;
+import com.syswin.library.messaging.MqProducer;
 import com.syswin.temail.data.consistency.application.MQProducer;
 import java.io.UnsupportedEncodingException;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicLong;
+import java.util.function.Supplier;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.rocketmq.client.exception.MQBrokerException;
-import org.apache.rocketmq.client.exception.MQClientException;
-import org.apache.rocketmq.remoting.exception.RemotingException;
 import org.togglz.core.Feature;
 import org.togglz.core.manager.FeatureManager;
 
 @Slf4j
 public class ToggleMqProducer implements MQProducer {
 
+  private final AtomicLong counter = new AtomicLong();
+  private long previousCount = 0L;
+  private final ScheduledExecutorService scheduledExecutor = Executors.newSingleThreadScheduledExecutor();
   private final FeatureManager featureManager;
   private final Feature feature;
-  private final MQProducer mqProducer;
+  private final Supplier<MqProducer> mqProducer;
 
   public ToggleMqProducer(FeatureManager featureManager,
       Feature feature,
-      MQProducer mqProducer) {
+      Supplier<MqProducer> mqProducer) {
     this.featureManager = featureManager;
     this.feature = feature;
     this.mqProducer = mqProducer;
@@ -50,12 +57,31 @@ public class ToggleMqProducer implements MQProducer {
 
   @Override
   public void send(String body, String topic, String tags, String keys)
-      throws UnsupportedEncodingException, InterruptedException, RemotingException, MQClientException, MQBrokerException {
+      throws UnsupportedEncodingException, InterruptedException, MessagingException {
 
     if (featureManager.isActive(feature)) {
       log.debug("Sending message of topic: {}, tag: {} with feature {}", topic, tags, feature);
-      mqProducer.send(body, topic, tags, keys);
+      mqProducer.get().send(body, topic, tags, keys);
       log.debug("Sent message of topic: {}, tag: {} with feature {}", topic, tags, feature);
+      counter.getAndIncrement();
     }
+  }
+
+  @Override
+  public void start() {
+    scheduledExecutor.scheduleWithFixedDelay(
+        () -> {
+          long count = counter.get();
+          if (count > previousCount) {
+            log.info("Sent {} messages since started", count);
+            previousCount = count;
+          }
+        },
+        30L, 30L, TimeUnit.SECONDS);
+  }
+
+  @Override
+  public void stop() {
+    scheduledExecutor.shutdownNow();
   }
 }

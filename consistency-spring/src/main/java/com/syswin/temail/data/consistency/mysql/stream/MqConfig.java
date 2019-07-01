@@ -24,14 +24,28 @@
 
 package com.syswin.temail.data.consistency.mysql.stream;
 
-import com.syswin.temail.data.consistency.domain.ListenerEvent;
-import java.util.List;
+import static com.syswin.library.messaging.all.spring.MqImplementation.ROCKET_MQ;
+import static com.syswin.library.messaging.all.spring.MqImplementation.ROCKET_MQ_ONS;
 
-public interface EventHandler {
+import com.syswin.library.messaging.all.spring.MqProducerConfig;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Configuration;
 
-  void start();
+@Configuration
+class MqConfig {
 
-  void stop();
+  static final String MQ_GROUP = "consistency-producer-group";
 
-  void handle(List<ListenerEvent> listenerEvents);
+  @ConditionalOnProperty(value = "library.messaging.rocketmq.enabled", havingValue = "true", matchIfMissing = true)
+  @Bean
+  MqProducerConfig rocketmqProducerConfig() {
+    return new MqProducerConfig(MQ_GROUP, ROCKET_MQ);
+  }
+
+  @ConditionalOnProperty(value = "library.messaging.rocketmqons.enabled", havingValue = "true")
+  @Bean
+  MqProducerConfig rocketmqOnsProducerConfig() {
+    return new MqProducerConfig(MQ_GROUP, ROCKET_MQ_ONS);
+  }
 }

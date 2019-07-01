@@ -27,12 +27,14 @@ package com.syswin.temail.data.consistency.mysql.stream;
 import static com.github.shyiko.mysql.binlog.event.EventType.EXT_WRITE_ROWS;
 import static com.github.shyiko.mysql.binlog.event.EventType.TABLE_MAP;
 import static com.syswin.temail.data.consistency.mysql.stream.DataSyncFeature.BINLOG;
+import static com.syswin.temail.data.consistency.mysql.stream.MqConfig.MQ_GROUP;
 
 import com.github.shyiko.mysql.binlog.event.Event;
 import com.github.shyiko.mysql.binlog.event.EventType;
 import com.syswin.library.database.event.stream.StatefulTaskSupplier;
+import com.syswin.library.messaging.MqProducer;
 import com.syswin.library.stateful.task.runner.ScheduledStatefulTask;
-import com.syswin.temail.data.consistency.application.MQProducer;
+import java.util.Map;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import javax.sql.DataSource;
@@ -44,12 +46,12 @@ import org.togglz.core.manager.FeatureManager;
 @Configuration
 class BinlogStreamConfig {
 
-  @Bean
-  EventHandler eventHandler(MQProducer mqProducer,
+  @Bean(initMethod = "start", destroyMethod = "stop")
+  EventHandler eventHandler(Map<String, MqProducer> producers,
       FeatureManager featureManager,
       @Value("${app.consistency.binlog.rocketmq.retry.limit:3}") int maxRetries,
       @Value("${app.consistency.binlog.rocketmq.retry.interval:1000}") long retryIntervalMillis) {
-    return new MqEventSender(new ToggleMqProducer(featureManager, BINLOG, mqProducer), maxRetries, retryIntervalMillis);
+    return new MqEventSender(new ToggleMqProducer(featureManager, BINLOG, () -> producers.get(MQ_GROUP)), maxRetries, retryIntervalMillis);
   }
 
   @Bean
@@ -60,7 +62,7 @@ class BinlogStreamConfig {
   @Bean
   StatefulTaskSupplier housekeepingTaskSupplier(
       @Value("${app.consistency.binlog.housekeeper.sweep.limit:1000}") int limit,
-      @Value("${app.consistency.binlog.housekeeper.sweep.interval:2000}") long sweepInterval,
+      @Value("${app.consistency.binlog.housekeeper.sweep.interval:10000}") long sweepInterval,
       FeatureManager featureManager) {
 
     return dataSource -> new ScheduledStatefulTask(new ToggleRunnable(featureManager, BINLOG, new EventHousekeeper(dataSource, limit)), sweepInterval);

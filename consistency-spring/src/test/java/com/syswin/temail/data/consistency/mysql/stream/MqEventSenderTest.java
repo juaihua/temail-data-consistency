@@ -37,6 +37,10 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 
+import com.syswin.library.messaging.MessageBrokerException;
+import com.syswin.library.messaging.MessageClientException;
+import com.syswin.library.messaging.MessageDeliverException;
+import com.syswin.library.messaging.MqProducer;
 import com.syswin.temail.data.consistency.application.MQProducer;
 import com.syswin.temail.data.consistency.domain.ListenerEvent;
 import com.syswin.temail.data.consistency.domain.SendingMQMessageException;
@@ -44,16 +48,13 @@ import java.io.UnsupportedEncodingException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
-import org.apache.rocketmq.client.exception.MQBrokerException;
-import org.apache.rocketmq.client.exception.MQClientException;
-import org.apache.rocketmq.remoting.exception.RemotingException;
 import org.junit.Test;
 import org.mockito.Mockito;
 
 public class MqEventSenderTest {
 
   private final List<String> sentMessages = new ArrayList<>();
-  private final MQProducer mqProducer = Mockito.mock(MQProducer.class);
+  private final MqProducer mqProducer = Mockito.mock(MqProducer.class);
   private final MQProducer compositeMqProducer = (body, topic, tags, keys) -> {
     mqProducer.send(body, topic, tags, keys);
     sentMessages.add(body + "," + topic + "," + tags);
@@ -81,7 +82,7 @@ public class MqEventSenderTest {
   @SuppressWarnings("unchecked")
   @Test
   public void retryFailedEventsWhenMqOutOfOrder() throws Exception {
-    doThrow(RemotingException.class, MQBrokerException.class)
+    doThrow(MessageDeliverException.class)
         .doNothing()
         .when(mqProducer)
         .send(anyString(), anyString(), anyString(), anyString());
@@ -96,7 +97,7 @@ public class MqEventSenderTest {
 
   @Test
   public void stopRetryingWhenInterrupted() throws Exception {
-    doThrow(SendingMQMessageException.class)
+    doThrow(MessageBrokerException.class)
         .when(mqProducer)
         .send(anyString(), anyString(), anyString(), anyString());
 
@@ -120,7 +121,7 @@ public class MqEventSenderTest {
 
   @Test(timeout = 2000L)
   public void retryUpToSpecifiedTimes() throws Exception {
-    doThrow(RemotingException.class)
+    doThrow(MessageDeliverException.class)
         .when(mqProducer)
         .send(anyString(), anyString(), anyString(), anyString());
 
@@ -137,7 +138,7 @@ public class MqEventSenderTest {
 
   @Test(timeout = 2000L)
   public void skipSendingInvalidEvents() throws Exception {
-    doThrow(UnsupportedEncodingException.class, MQClientException.class)
+    doThrow(UnsupportedEncodingException.class, MessageClientException.class)
         .when(mqProducer)
         .send(anyString(), anyString(), anyString(), anyString());
 

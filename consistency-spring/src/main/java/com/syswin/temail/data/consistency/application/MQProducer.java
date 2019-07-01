@@ -24,12 +24,19 @@
 
 package com.syswin.temail.data.consistency.application;
 
+import com.syswin.library.messaging.MessagingException;
 import java.io.UnsupportedEncodingException;
-import org.apache.rocketmq.client.exception.MQBrokerException;
-import org.apache.rocketmq.client.exception.MQClientException;
-import org.apache.rocketmq.remoting.exception.RemotingException;
 
 public interface MQProducer {
 
-  void send(String body, String topic, String tags, String keys) throws UnsupportedEncodingException, InterruptedException, RemotingException, MQClientException, MQBrokerException;
+  default void start() {
+
+  }
+
+  void send(String body, String topic, String tags, String keys)
+      throws UnsupportedEncodingException, InterruptedException, MessagingException;
+
+  default void stop() {
+
+  }
 }

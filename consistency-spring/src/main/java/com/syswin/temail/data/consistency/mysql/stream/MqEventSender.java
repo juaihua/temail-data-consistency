@@ -24,15 +24,15 @@
 
 package com.syswin.temail.data.consistency.mysql.stream;
 
+import com.syswin.library.messaging.MessageBrokerException;
+import com.syswin.library.messaging.MessageClientException;
+import com.syswin.library.messaging.MessagingException;
 import com.syswin.temail.data.consistency.application.MQProducer;
 import com.syswin.temail.data.consistency.domain.ListenerEvent;
 import com.syswin.temail.data.consistency.domain.SendingMQMessageException;
 import java.io.UnsupportedEncodingException;
 import java.util.List;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.rocketmq.client.exception.MQBrokerException;
-import org.apache.rocketmq.client.exception.MQClientException;
-import org.apache.rocketmq.remoting.exception.RemotingException;
 
 @Slf4j
 public class MqEventSender implements EventHandler {
@@ -48,6 +48,16 @@ public class MqEventSender implements EventHandler {
   }
 
   @Override
+  public void start() {
+    mqProducer.start();
+  }
+
+  @Override
+  public void stop() {
+    mqProducer.stop();
+  }
+
+  @Override
   public void handle(List<ListenerEvent> listenerEvents) {
     for (int i = 0; i < listenerEvents.size() && !Thread.currentThread().isInterrupted(); i++) {
       send(listenerEvents.get(i));
@@ -60,20 +70,20 @@ public class MqEventSender implements EventHandler {
         log.debug("Sending event to MQ: {}", listenerEvent);
         mqProducer.send(listenerEvent.getContent(), listenerEvent.getTopic(), listenerEvent.getTag(), listenerEvent.key());
         return;
-      } catch (RemotingException | MQBrokerException e) {
+      } catch (UnsupportedEncodingException | MessageClientException e) {
+        log.error("Failed to send listener event by MQ: {}", listenerEvent, e);
+        return;
+      } catch (MessageBrokerException e) {
+        log.error("Failed to send listener event by MQ and will retry: {}", listenerEvent, e);
+        sleep(listenerEvent);
+      } catch (MessagingException e) {
         log.error("Failed to send listener event by MQ and will retry: {}", listenerEvent, e);
         if (i == maxRetries) {
           throw new SendingMQMessageException("Failed to send listener event by MQ after retrying " + maxRetries + " times", e);
         }
         sleep(listenerEvent);
-      } catch (SendingMQMessageException e) {
-        log.error("Failed to send listener event by MQ and will retry: {}", listenerEvent, e);
-        sleep(listenerEvent);
       } catch (InterruptedException e) {
         onInterruption(listenerEvent, e);
-      } catch (UnsupportedEncodingException | MQClientException e) {
-        log.error("Failed to send listener event by MQ: {}", listenerEvent, e);
-        return;
       }
     }
   }
