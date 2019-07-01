@@ -88,10 +88,6 @@
       <artifactId>messaging-all-spring</artifactId>
     </dependency>
     <dependency>
-      <groupId>org.apache.rocketmq</groupId>
-      <artifactId>rocketmq-client</artifactId>
-    </dependency>
-    <dependency>
       <groupId>com.syswin.library</groupId>
       <artifactId>database-event-stream-spring</artifactId>
     </dependency>
