@@ -28,6 +28,7 @@ import static com.syswin.library.messaging.all.spring.MqImplementation.ROCKET_MQ
 import static com.syswin.library.messaging.all.spring.MqImplementation.ROCKET_MQ_ONS;
 
 import com.syswin.library.messaging.all.spring.MqProducerConfig;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -35,17 +36,19 @@ import org.springframework.context.annotation.Configuration;
 @Configuration
 class MqConfig {
 
-  static final String MQ_GROUP = "consistency-producer-group";
+  //'spring.rocketmqons.consistency.producer.group=GID_consistency-producer-group' needs to be added when using rocketmqons
+  @Value("${spring.rocketmqons.consistency.producer.group:consistency-producer-group}")
+  private String mqGroup;
 
   @ConditionalOnProperty(value = "library.messaging.rocketmq.enabled", havingValue = "true", matchIfMissing = true)
   @Bean
   MqProducerConfig rocketmqProducerConfig() {
-    return new MqProducerConfig(MQ_GROUP, ROCKET_MQ);
+    return new MqProducerConfig(mqGroup, ROCKET_MQ);
   }
 
   @ConditionalOnProperty(value = "library.messaging.rocketmqons.enabled", havingValue = "true")
   @Bean
   MqProducerConfig rocketmqOnsProducerConfig() {
-    return new MqProducerConfig(MQ_GROUP, ROCKET_MQ_ONS);
+    return new MqProducerConfig(mqGroup, ROCKET_MQ_ONS);
   }
 }

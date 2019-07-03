@@ -253,7 +253,7 @@
         <artifactId>maven-jar-plugin</artifactId>
         <configuration>
           <excludes>
-            <exclude>**/application.properties</exclude>
+            <exclude>**/*.properties</exclude>
           </excludes>
         </configuration>
       </plugin>

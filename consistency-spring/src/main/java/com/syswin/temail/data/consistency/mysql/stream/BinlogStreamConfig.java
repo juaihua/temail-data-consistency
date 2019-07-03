@@ -27,7 +27,6 @@ package com.syswin.temail.data.consistency.mysql.stream;
 import static com.github.shyiko.mysql.binlog.event.EventType.EXT_WRITE_ROWS;
 import static com.github.shyiko.mysql.binlog.event.EventType.TABLE_MAP;
 import static com.syswin.temail.data.consistency.mysql.stream.DataSyncFeature.BINLOG;
-import static com.syswin.temail.data.consistency.mysql.stream.MqConfig.MQ_GROUP;
 
 import com.github.shyiko.mysql.binlog.event.Event;
 import com.github.shyiko.mysql.binlog.event.EventType;
@@ -46,12 +45,15 @@ import org.togglz.core.manager.FeatureManager;
 @Configuration
 class BinlogStreamConfig {
 
+  @Value("${spring.rocketmqons.consistency.producer.group:consistency-producer-group}")
+  private String mqGroup;
+
   @Bean(initMethod = "start", destroyMethod = "stop")
   EventHandler eventHandler(Map<String, MqProducer> producers,
       FeatureManager featureManager,
       @Value("${app.consistency.binlog.rocketmq.retry.limit:3}") int maxRetries,
       @Value("${app.consistency.binlog.rocketmq.retry.interval:1000}") long retryIntervalMillis) {
-    return new MqEventSender(new ToggleMqProducer(featureManager, BINLOG, () -> producers.get(MQ_GROUP)), maxRetries, retryIntervalMillis);
+    return new MqEventSender(new ToggleMqProducer(featureManager, BINLOG, () -> producers.get(mqGroup)), maxRetries, retryIntervalMillis);
   }
 
   @Bean
