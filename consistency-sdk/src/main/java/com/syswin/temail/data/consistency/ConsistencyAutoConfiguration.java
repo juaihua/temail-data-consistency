@@ -25,14 +25,19 @@
 package com.syswin.temail.data.consistency;
 
 import com.syswin.temail.data.consistency.application.TemailMqSender;
+import com.syswin.temail.data.consistency.infrastructure.ListenerEventMapper;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
 @Configuration
 public class ConsistencyAutoConfiguration {
 
+  @Autowired
+  private ListenerEventMapper listenerEventMapper;
+
   @Bean
   public TemailMqSender temailMqSender(){
-    return new TemailMqSender();
+    return new TemailMqSender(listenerEventMapper);
   }
 }
